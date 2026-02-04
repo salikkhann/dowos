@@ -7,16 +7,17 @@ Tick items off as you go. Update or re-create this file when the list drains.
 
 ## Phase 1 – Foundation & Decisions
 
-### Backend & Auth (Days 1–2)
-- [ ] Create `src/lib/supabase.ts` — `createBrowserClient` + `createServerClient`
-- [ ] Write Supabase migration: `users` table + RLS policies
-- [ ] Write Supabase migration: `user_preferences` table
-- [ ] Build signup flow: email input → OTP send → OTP verify
-- [ ] Build profile step: roll number, batch year, lab group (A–F), learning style
-- [ ] Build Dow ID upload step: photo upload to Supabase Storage, pending-approval state
-- [ ] Build login flow: email → OTP → session cookie
-- [ ] Write middleware route guard on `(app)/` group (redirects unauthenticated users)
-- [ ] Smoke-test the full auth loop locally (signup → login → guarded page → logout)
+### Backend & Auth (Days 1–2) ✓ DONE
+- [x] Create `src/lib/supabase.ts` — `createBrowserClient` + `createServerClient`
+- [x] Write Supabase migration: `users` table + RLS policies
+- [x] Write Supabase migration: `user_preferences` table
+- [x] Build signup flow: email input → OTP send → OTP verify
+- [x] Build profile step: roll number, batch year, lab group (A–F), learning style
+- [x] Build Dow ID upload step: photo upload to Supabase Storage, pending-approval state
+- [x] Build login flow: email → OTP → session cookie
+- [x] Write middleware route guard on `(app)/` group (redirects unauthenticated users)
+- [x] Smoke-test the full auth loop locally (signup → login → guarded page → logout)
+- [x] Merge `feature/auth-onboarding` → `main`
 
 ### Architecture Decision Days (Days 3–9)
 - [ ] **Day 3 – RAG:** Research chunking + embedding options, write `docs/decisions/rag-architecture.md`
@@ -26,7 +27,7 @@ Tick items off as you go. Update or re-create this file when the list drains.
 - [ ] **Day 7 – Mobile delivery:** Capacitor vs PWA comparison, write `docs/decisions/mobile-delivery.md`
 - [ ] **Day 8 – Viva orchestration:** LangGraph vs state machine, write `docs/decisions/viva-bot-orchestration.md`
 - [ ] **Day 9 – Sign-off:** Review all 6 decision docs for consistency, update `docs/FINAL_LOCKED_DECISIONS.md`
-- [ ] Create `docs/decisions/` folder (one doc per decision, all decisions live here going forward)
+- [x] Create `docs/decisions/` folder (one doc per decision, all decisions live here going forward)
 
 ## Phase 2 – Core Shell & Admin (Days 10–14, early start)
 
