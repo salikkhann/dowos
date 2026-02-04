@@ -193,32 +193,123 @@ Bus positions are ephemeral — no one needs to query "where was bus 7 at 10:42 
 **Driver app scope:**
 A minimal Capacitor app (can live in the same repo under a `/driver` route, gated by a `is_driver` role). It does one thing: start GPS, connect to Realtime, stream coordinates. No map rendering needed on the driver side.
 
-### 4.4 Map A — Campus & CHK (indoor wayfinding)
+### 4.4 Map A — Campus & CHK (indoor wayfinding) — full MVP spec
 
-Lower priority. Floor-plan data does not exist yet — this is the first blocker. Architecture is planned here so Phase 5 can build straight to it without a second decision day.
+Same MapLibre instance as Map B, different screen. No indoor routing engine — MVP is **pin + floor indicator**. Students search for a place, the map shows them which floor it's on and highlights the room polygon. They take it from there physically.
+
+#### 4.4.1 POI categories (what students search for)
+
+| Category | Examples | Icon set |
+|---|---|---|
+| Departments / Wards | Surgery, Medicine, Physiology, Cardiology | `stethoscope` |
+| Labs & Dissection halls | Anatomy lab, Biochem lab, Micro lab | `microscope` |
+| Classrooms / Lecture halls | Lecture Hall 1, Seminar Room 3 | `book-open` |
+| Facilities | Canteen, Library, Prayer room, Toilets | context-specific (`utensils`, `book`, `mosque`, `accessibility`) |
+
+All icons from Lucide React (already installed). Each POI is a Point feature in a `campus_places` GeoJSON with: `place_id`, `place_name`, `category`, `floor_id`, `building_id`, `lat`, `lng`.
+
+#### 4.4.2 MapLibre layer stack (render order, bottom → top)
 
 ```
-Same MapLibre instance as Map B, different route/screen.
-
-Layers:
-  • campus_outline    – Polygon (Dow + CHK boundary)
-  • building_footprint – Polygon per building
-  • floor_plans       – GeoJSON per floor, toggled via a
-                        floor-selector UI (dropdown or
-                        vertical tab strip)
-  • indoor_routes     – LineString per corridor / stairwell
-  • places            – Point per named location (lab, ward,
-                        department) with a label + icon
-
-Data source for floor plans:
-  Blocked until floor-plan data is sourced. Options in order
-  of preference:
-    1. Request from Dow administration (architectural drawings)
-    2. Trace from high-res Google Street View / satellite imagery
-       + student-contributed corrections
-  Once traced, exported as GeoJSON, stored in Supabase, rendered
-  as a layer the same way bus routes are.
+┌─── MapLibre GL JS — Campus map screen ─────────────────────────┐
+│                                                                 │
+│  Layer 1: PMTiles base (same Karachi extract as Point map)      │
+│                                                                 │
+│  Layer 2: campus_outline – Navy polygon, 0.3 opacity fill       │
+│           Dow boundary + CHK boundary                           │
+│                                                                 │
+│  Layer 3: building_footprints – Navy stroke, transparent fill   │
+│           Each building as a labelled polygon                   │
+│                                                                 │
+│  Layer 4: floor_plan_walls – White stroke on dark fill          │
+│           Rooms / corridors as polygons for the ACTIVE floor    │
+│           Only one floor rendered at a time (see floor toggle)  │
+│                                                                 │
+│  Layer 5: campus_places – POI markers                           │
+│           Points with category icons + labels                   │
+│           ONLY places on the active floor are visible           │
+│           Tapped place → bottom sheet with name + floor + cat   │
+│                                                                 │
+│  Layer 6: highlight – single Polygon, Teal fill 0.4 opacity    │
+│           The room polygon of the currently selected place.     │
+│           Cleared when user taps elsewhere.                     │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+#### 4.4.3 Floor selector UI
+
+A compact horizontal pill strip at the bottom of the map (above the nav bar). Pills: `G`, `1`, `2`, `3`, … one per floor of Dow main building. Tapping a pill:
+
+1. Filters `floor_plan_walls` to that floor's GeoJSON only
+2. Filters `campus_places` markers to that floor
+3. Animates map camera to that floor's bounding box (so the user isn't staring at the wrong part of the building)
+
+If the user searched for and selected a specific place, the floor pill auto-selects to that place's floor — no manual floor-switching needed for the common case.
+
+#### 4.4.4 Data model — Supabase tables
+
+| Table | Purpose | Key columns |
+|---|---|---|
+| `campus_buildings` | Registry of buildings | `id`, `building_name` (`Dow Main`, `CHK Main`), `campus` (`dow` \| `chk`), `outline_geojson` (Polygon) |
+| `campus_floors` | One row per floor per building | `id`, `building_id` (FK), `floor_label` (`G`, `1`, `2` …), `floor_plan_geojson` (FeatureCollection — all room polygons for this floor), `bbox` (bounding box for camera zoom) |
+| `campus_places` | Every searchable POI | `id`, `place_name`, `category` (enum: `department` \| `lab` \| `classroom` \| `facility`), `floor_id` (FK), `building_id` (FK), `lat`, `lng`, `room_polygon_id` (nullable — links to the specific room polygon inside `floor_plan_geojson` so it can be highlighted) |
+
+RLS: all three tables are **read-only for authenticated users**, write via service-role only (same pattern as `knowledge_chunks`). Floor-plan data is static content seeded by the team — students never write to it.
+
+#### 4.4.5 Search → highlight flow
+
+```
+Student types "Anatomy Lab"
+     │
+     ▼
+Client-side fuzzy match against campus_places.place_name
+(all places already loaded — small dataset, < 200 rows)
+     │
+     ▼
+Match found → { place_id, floor_id, lat, lng, room_polygon_id }
+     │
+     ├── Auto-select floor pill to place.floor_id
+     ├── Pan + zoom map to place.lat, place.lng
+     ├── Render highlight layer on place.room_polygon_id
+     └── Show bottom sheet: "Anatomy Lab · Floor 2 · Department"
+```
+
+No geocoding call. No server round-trip. The entire interaction from keystroke to highlighted room is client-side.
+
+#### 4.4.6 Digitisation workflow — how the team produces the GeoJSON
+
+This is the pre-build dependency. The team needs to produce three deliverables before a single line of map code is written:
+
+**Step 1 — Request CAD/PDF from Dow admin.**
+Contact facilities / registrar for architectural drawings of Dow main building. Even a low-res PDF scan is enough — QGIS can georeference and trace over it.
+
+**Step 2 — Georeference in QGIS.**
+One team member (the "GIS lead" for this task) installs QGIS (free). They:
+1. Add an OSM or satellite base map (built into QGIS via the XYZ tile layers)
+2. Load the Dow floor-plan PDF/image as a raster layer
+3. Use the Georeferencer plugin to pin 3–4 corners of the building image to their real GPS coordinates (visible on the satellite base). This locks the image to the real world.
+4. Export the georeferenced image as a GeoTIFF — this becomes the tracing base for the rest of the team.
+
+**Step 3 — Trace rooms as polygons.**
+Each team member traces a subset of floors. Per floor:
+1. Create a new Shapefile layer (Polygon, EPSG:4326)
+2. Enable snapping (vertex + segment, ~12 px tolerance)
+3. Use the Shape Digitizing toolbar — rectangles and regular shapes snap cleanly
+4. For each room: draw the polygon, then add attributes in the attribute table: `room_id`, `room_name`, `category`
+5. Simplify circles (Vector → Geometry Tools → Simplify, 0.05 m) to keep file size sane
+
+**Step 4 — Place POIs.**
+On a separate Point layer, drop a point in each room and fill in: `place_name`, `category`, `floor_label`. Link it to the room polygon's `room_id`.
+
+**Step 5 — Export.**
+Each floor exported as a separate GeoJSON file:
+- `dow_floor_G.geojson` — ground floor room polygons
+- `dow_floor_1.geojson` — first floor room polygons
+- … and so on
+- `dow_places.geojson` — all POI points across all floors
+
+**Step 6 — Upload to Supabase.**
+Dev seeds `campus_buildings`, `campus_floors` (one row per GeoJSON file, bbox calculated), and `campus_places` (one row per POI point). Done. The map renders.
 
 ### 4.5 Search UX — shared component
 
@@ -290,9 +381,31 @@ Compare to Option A (Google Maps JS SDK for both maps): Dynamic Maps alone would
 | 34 | Build place-search: input → Google Geocoding → Haversine match → top-3 stops card → tap to pan map + highlight route. |
 | 35 | QA on mid-range Android WebView (Capacitor dev server). Test with Wi-Fi off (PMTiles offline). Polish UI to 375 px. |
 
-### Phase 5 — Map A: Campus/CHK (if floor-plan data is ready)
+### Pre-build dependency — Campus map digitisation (runs in parallel with Phase 3–4 coding)
 
-Same days as above, but gated on floor-plan data existing. If not ready, ship a simplified version: campus outline + building footprints + named place markers (no indoor floors). Full indoor wayfinding added in a follow-up once data is sourced.
+The digitisation work below does **not** block the Point map build. It runs in parallel while the AI and Viva features are being coded. The GeoJSON files must be ready before Day 31 (when Phase 5 coding starts) or the Campus map ships as a simplified fallback (see Day 35 below).
+
+| Who | Task | When (target) |
+|---|---|---|
+| Team member A | Request CAD/PDF floor plans from Dow admin | Day 10–12 (early Phase 2 — send the email now, admin is slow) |
+| Team member A | Georeference the PDF in QGIS — produce the GeoTIFF tracing base | Day 15 (once PDF arrives) |
+| Team members A + B | Trace all floors of Dow main building — room polygons + POI points | Days 16–22 (during Phase 3 coding sprint) |
+| Team member A | QA the GeoJSON: open in geojson.io, verify every room is closed, no gaps | Day 23 |
+| Dev | Seed `campus_buildings`, `campus_floors`, `campus_places` in Supabase | Day 30 (end of Phase 4, before Phase 5 build starts) |
+
+Estimated tracing effort: **one person-day per floor** (draw polygons, label rooms, drop POI points). If Dow main has 4–5 floors, that's 4–5 person-days of tracing spread across 2 people over ~1 week. Achievable alongside other team tasks.
+
+### Phase 5 — Map A: Campus/CHK (indoor wayfinding)
+
+Runs on the same days as Map B. MapLibre and PMTiles are already set up by Day 31 — Map A is purely about rendering the campus GeoJSON on top.
+
+| Day | Work item |
+|---|---|
+| 31 | Create Supabase tables: `campus_buildings`, `campus_floors`, `campus_places`. Seed with the digitised GeoJSON (produced during Phase 3–4). Write the data-fetch Server Component that returns all three tables. |
+| 32 | Build the Campus map screen: render base tiles → campus outline → building footprints → active floor's room polygons → POI markers. Wire the floor pill selector: tap a pill → swap the floor GeoJSON layer + filter POI markers + zoom to that floor's bbox. |
+| 33 | Build the search → highlight flow: input → client-side fuzzy match on `campus_places` → auto-select floor → pan/zoom → highlight room polygon → bottom sheet. |
+| 34 | Polish: icon set per POI category (Lucide), bottom sheet card design, dark-mode, 375 px mobile layout. Ensure touch targets on floor pills and POI markers are ≥ 44 × 44 px. |
+| 35 | QA on mid-range Android WebView. **Fallback gate:** if digitised GeoJSON is not ready by this day, ship a simplified version — campus outline + building footprints + POI markers with no room polygons and no floor selector. Students can still search and find "Anatomy Lab is in Dow Main" even without the indoor floor detail. Full indoor map added in a follow-up sprint once data arrives. |
 
 ### Phase 2 addon — Live tracking
 
@@ -317,4 +430,10 @@ Same days as above, but gated on floor-plan data existing. If not ready, ship a 
 - [Supabase Realtime — Benchmarks](https://supabase.com/docs/guides/realtime/benchmarks)
 - [MapLibre GL JS vs OpenLayers — Wappalyzer](https://www.wappalyzer.com/compare/maplibre-gl-js-vs-openlayers/)
 - [map-gl-offline plugin — MapLibre](https://maplibre.org/maplibre-gl-js/docs/plugins/)
+- [QGIS — PDF / image to GeoJSON tracing workflow](https://xrnavigation.io/how-to-convert-from-pdf-to-geojson-using-qgis/)
+- [Indoor Mapping Data Format (IMDF) — OGC standard](https://www.ogc.org/standards/indoor-mapping-data-format/)
+- [MapLibre + IMDF indoor map rendering — FOSS4G 2025 talk](https://talks.osgeo.org/foss4g-2025/talk/Y3UMBY/)
+- [IndoorEqual — open-source indoor map viewer (GeoJSON / IMDF)](https://github.com/indoorequal/indoorequal.org)
+- [Convert floor plans to interactive indoor maps — Mapsted guide](https://mapsted.com/blog/how-to-convert-floor-plans-into-interactive-indoor-maps)
+- [ArcGIS Indoors — digitisation workflow overview](https://pro.arcgis.com/en/pro-app/latest/help/data/indoors/data-creation-workflow.htm)
 - Skills consulted: `nextjs-app-router-patterns`, `react-patterns`, `tailwind-design-system`
