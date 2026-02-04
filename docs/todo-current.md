@@ -20,7 +20,7 @@ Tick items off as you go. Update or re-create this file when the list drains.
 - [x] Merge `feature/auth-onboarding` → `main`
 
 ### Architecture Decision Days (Days 3–9)
-- [ ] **Day 3 – RAG:** Research chunking + embedding options, write `docs/decisions/rag-architecture.md`
+- [x] **Day 3 – RAG:** Research chunking + embedding options, write `docs/decisions/rag-architecture.md`
 - [ ] **Day 4 – Maps:** Compare Google Maps vs OSM/OpenLayers, write `docs/decisions/maps-platform.md`
 - [ ] **Day 5 – Voice/STT:** Test accent accuracy on all three options, write `docs/decisions/voice-stt.md`
 - [ ] **Day 6 – AI routing:** Benchmark Gemini vs DeepSeek R1 on 20 med questions, write `docs/decisions/ai-routing-fallback.md`
