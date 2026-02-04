@@ -21,7 +21,7 @@ Tick items off as you go. Update or re-create this file when the list drains.
 
 ### Architecture Decision Days (Days 3–9)
 - [x] **Day 3 – RAG + Models:** Research chunking + embedding options, write `docs/decisions/rag-architecture.md` + `docs/decisions/model-selection.md`. Finalised Quick / Tutor / Socratic mode toggle; cut spaced-rep + adaptive difficulty; past-papers via CSV/JSON only.
-- [ ] **Day 4 – Maps:** Compare Google Maps vs OSM/OpenLayers, write `docs/decisions/maps-platform.md`
+- [x] **Day 4 – Maps:** Two-map architecture decided: MapLibre GL JS + PMTiles for both maps. Point (bus) map is priority — static routes Phase 5, live GPS tracking Phase 2 addon. Campus/CHK map gated on floor-plan data. Google Geocoding only for place-search. Write `docs/decisions/maps-platform.md`
 - [ ] **Day 5 – Voice/STT:** Test accent accuracy on all three options, write `docs/decisions/voice-stt.md`
 - [ ] **Day 6 – AI routing:** Benchmark Gemini vs DeepSeek R1 on 20 med questions, write `docs/decisions/ai-routing-fallback.md`
 - [ ] **Day 7 – Mobile delivery:** Capacitor vs PWA comparison, write `docs/decisions/mobile-delivery.md`
