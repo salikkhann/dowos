@@ -1,11 +1,12 @@
 import { createBrowserClient, createServerClient } from "@supabase/ssr";
 
-// ── types (will be replaced by generated types later) ──
-export type Database = Record<string, never>;
-
 // ── browser client (use in Client Components / hooks) ──
+// Generic omitted intentionally: Next.js "use client" boundary + Turbopack
+// prevent the Database type from flowing through createBrowserClient reliably.
+// Use the User / UserPreferences types from @/types/database for assertions
+// after each query (see onboarding page for the pattern).
 export function createSupabaseBrowserClient() {
-  return createBrowserClient<Database>(
+  return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   );
@@ -19,7 +20,7 @@ export function createSupabaseBrowserClient() {
 export function createSupabaseServerClient(
   cookieStore: Awaited<ReturnType<typeof import("next/headers").cookies>>,
 ) {
-  return createServerClient<Database>(
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
