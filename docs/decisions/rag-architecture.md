@@ -17,11 +17,11 @@ From `FINAL_LOCKED_DECISIONS.md`, `00_DISCOVERY_RESOLVED.md`, and `model-selecti
 | Embedding vendor + dims | `gemini-embedding-001`, 768 dims (MRL), asymmetric task types |
 | Vector store | pgvector on Supabase (HNSW) |
 | Memory tiers | Short-term (session, last 10 msgs) + Long-term (`student_memory` with weak/strong signals; see `model-selection.md` §4) |
-| Knowledge corpus | 25 medical textbooks + Dow slides + **past-paper question banks** (all PDFs via admin dashboard) |
-| High-yield layer | Past papers → Flash-Lite batch extracts questions + topics → scored by frequency → stored in `high_yield_topics`; injected into every tutor prompt |
+| Knowledge corpus | 25 medical textbooks + Dow slides (PDFs) + **past-paper question banks** (CSV / JSON via admin dashboard) |
+| High-yield layer | Past-paper CSV/JSON → embed + insert → Flash-Lite batch scores topic frequency → stored in `high_yield_topics`; injected into every tutor prompt |
 | Rate limits | Soft 2 msgs/day (+5 s delay), Hard 4 msgs/day (blocked), Pro = unlimited |
-| Tutor modes | Chat (free-form) + Tutor (structured drill) |
-| Pro personalisation | Spaced-repetition engine, adaptive difficulty, weekly study plans, exam-readiness scores — all Pro-only; see §8 |
+| Tutor modes | **Quick** (fast answers, all users) / **Tutor** (step-by-step, all users) / **Socratic** (guiding questions only, Pro-gated) — student-selected toggle |
+| Pro personalisation | Weekly study plans, exam-readiness scores, Socratic deep-dive, progress narrative — all Pro-only; see §8 |
 | Cost target | ~$41 / month at 500 DAU (full breakdown in `model-selection.md` §5) |
 
 ---
@@ -41,7 +41,7 @@ The PRD flagged five items for Day 3:
 6. The tutor must also be able to cite live web / Google Search results, not only the static textbook corpus.
 7. The experience must feel seamless and conversational — low latency, streaming, no robotic pauses.
 8. Past-paper questions will be uploaded alongside textbooks. The system must mine them to surface **high-yield topics** (frequently tested) and use that signal when teaching — so the tutor prioritises what actually shows up on exams.
-9. **Pro users get a deeper personalisation layer:** spaced-repetition scheduling, adaptive difficulty, weekly study-plan generation, and exam-readiness scoring — all driven by the same student signals the memory system already collects. This is the core value prop of the PKR 3 000 / yr subscription.
+9. **Pro users get a deeper personalisation layer:** weekly study-plan generation, exam-readiness scoring, Socratic deep-dive mode, and progress narratives — all driven by the same student signals the memory system already collects. Socratic mode (DeepSeek R1, guiding questions only) is the headline Pro experience alongside Quick and Tutor modes available to everyone. This is the core value prop of the PKR 3 000 / yr subscription.
 
 ---
 
@@ -78,16 +78,20 @@ Move vectors out of Supabase into a dedicated store.
 └────────────────────────────┬─────────────────────────────────────────┘
                              │
                              ▼
-                ┌─── Complexity Router ───┐
-                │  Flash-Lite classifier  │
-                │  emits SIMPLE | COMPLEX │
-                └──────┬─────────┬────────┘
-          SIMPLE       │         │  COMPLEX
-                       ▼         ▼
-              ┌── Tier 1 ──┐  ┌── Tier 2 ──────────┐
-              │ Flash      │  │ DeepSeek R1        │
-              │ (grounding)│  │ (deep reasoning)   │
-              └──────┬─────┘  └────────┬───────────┘
+          ┌─── Mode Toggle (student picks) ───┐
+          │  Quick    → Flash (grounding)     │
+          │  Tutor    → Flash (grounding)     │
+          │  Socratic → DeepSeek R1 (Pro)     │
+          └──────┬────────────────────────────┘
+                 │ Quick / Tutor          │ Socratic
+                 ▼                        ▼
+          ┌─ Bump check ─┐        (R1 always)
+          │ Flash-Lite   │
+          │ COMPLEX? →   │
+          │ swap to R1   │
+          │ (one reply)  │
+          └──────┬───────┘
+                 │
                      │                 │
      ┌───────────────┼──────────────┼──────────────┼───────────────┐
      ▼               ▼              ▼              ▼               ▼
@@ -106,7 +110,7 @@ Move vectors out of Supabase into a dedicated store.
   All retrieved context assembled into a single prompt:
   ┌────────────────────────────────────────────────────────────┐
   │  System prompt                                             │
-  │    • persona (Chat vs Tutor tone)                          │
+  │    • persona (Quick / Tutor / Socratic tone)               │
   │    • learning_style + explanation_depth                    │
   │  Short-term memory              ≤ 1 500 tokens            │
   │  Student memory signals         ≤ 1 000 tokens            │
@@ -114,7 +118,7 @@ Move vectors out of Supabase into a dedicated store.
   │  Textbook chunks [T1…T5]       ≤ 4 200 tokens            │
   │  Citation instructions                                     │
   │    • [T n] = textbook  [W n] = web  [P n] = past paper   │
-  │  google_search tool (Tier 1 only)                          │
+  │  google_search tool (Quick / Tutor only — not Socratic)   │
   │  ─────────────────────────────────────────                 │
   │  Total context budget           ≤ 8 000 tokens            │
   └────────────────────────────────────────────────────────────┘
@@ -147,8 +151,8 @@ Move vectors out of Supabase into a dedicated store.
 | Metadata attached | `source_id`, `book_title`, `chapter`, `section`, `page_number`, `module_tag` (admin-assigned), `subject_tag`, `subtopic_tag`, `batch_relevance[]`, `chunk_type` |
 | Q&A extraction | During ingestion, run **Flash-Lite batch** (not Flash) per section: *"Extract up to 3 exam-style Q&A pairs from this text."* Store as sibling chunks tagged `chunk_type: qa`. These surface first for drill-mode queries. Flash-Lite is adequate for extraction; Flash is reserved for interactive calls. |
 | Medical term handling | Before embedding, run a lightweight normalisation pass: expand abbreviations common in medical texts (e.g. HTN → hypertension, DM → diabetes mellitus). Attach the expanded form to the chunk's metadata `terms[]` field. BM25 sparse search indexes these expanded terms — critical for recall on medical vocabulary (sharp edge: same embedding model across content types loses domain specificity). |
-| Past-paper chunking | Past-paper PDFs are chunked the same way as textbooks but every extracted question + answer is stored as its own chunk with `chunk_type: past_paper`. Metadata adds `exam_year`, `exam_type` (`annual` \| `supplementary` \| `mock`), and `topic_tags[]` (extracted by Flash-Lite). These chunks are **never** used as direct answers — they exist solely to (a) teach the retrieval layer what topics matter and (b) surface as example questions in Tutor drill mode. |
-| High-yield scoring | After all past-paper questions for a module are ingested, a single Flash-Lite batch call receives the full list of `topic_tags[]` across every question and returns a JSON frequency map: `{ "coronary_circulation": 14, "cardiac_output": 9, … }`. This is stored in `high_yield_topics` (one row per module-subtopic). Any subtopic appearing in ≥ 3 past papers is flagged `is_high_yield = true`. The flag is injected into the tutor's system prompt and used to bias retrieval weights: high-yield chunks get a **1.3× score multiplier** after RRF, before re-ranking. |
+| Past-paper ingestion | Past papers arrive as **CSV or JSON** (not PDF). Each row / object already contains: `question`, `correct_answer`, `explanation`, `topic_tags[]`, `exam_year`, `exam_type` (`annual` \| `supplementary` \| `mock`). No extraction step needed — admin uploads the structured file directly. Each question is embedded and inserted into `past_paper_questions`, and a mirror copy is stored in `knowledge_chunks` (type: `past_paper`) so it participates in hybrid retrieval during drill mode. These chunks are **never** surfaced as direct answers — they exist to (a) teach the retrieval layer what topics matter and (b) surface as worked examples in Tutor / Socratic drill. |
+| High-yield scoring | After all past-paper questions for a module are inserted, a single Flash-Lite batch call receives the full list of `topic_tags[]` across every question and returns a JSON frequency map: `{ "coronary_circulation": 14, "cardiac_output": 9, … }`. Stored in `high_yield_topics` (one row per module-subtopic). Any subtopic appearing in ≥ 3 past papers is flagged `is_high_yield = true`. The flag is injected into the tutor's system prompt and biases retrieval: high-yield chunks get a **1.3× score multiplier** after RRF, before re-ranking. |
 
 ### 4.3 Retrieval — hybrid search with dedup and compression
 
@@ -233,9 +237,9 @@ After 10 min of inactivity or navigation away, a background job:
 | `knowledge_sources` | 00002 | Registry of uploaded PDFs / slide decks | `id`, `title`, `file_url`, `module_id`, `uploaded_by`, `status` (`pending` \| `indexed` \| `error`) |
 | `knowledge_sections` | 00002 | Full-text sections (parent documents for contextual compression) | `id`, `source_id`, `section_path` (e.g. `"Ch3 > Coronary Circulation"`), `full_text`, `module_tag`, `subject_tag` |
 | `knowledge_chunks` | 00002 | Pre-chunked, embedded child segments | `id`, `source_id`, `parent_section_id` (FK → `knowledge_sections`), `text`, `embedding vector(768)`, `module_tag`, `subject_tag`, `subtopic_tag`, `chunk_type` (`text` \| `qa`), `terms[]` (normalised medical terms), `metadata jsonb` |
-| `chat_sessions` | 00002 | One row per conversation | `id`, `user_id`, `mode` (`chat` \| `tutor`), `created_at`, `last_active_at` |
+| `chat_sessions` | 00002 | One row per conversation | `id`, `user_id`, `mode` (`quick` \| `tutor` \| `socratic`), `created_at`, `last_active_at` |
 | `chat_messages` | 00002 | Individual messages with role + content | `id`, `session_id`, `role` (`user` \| `assistant`), `content`, `citations jsonb`, `tokens_used`, `created_at` |
-| `past_paper_questions` | 00002 | Individual questions extracted from past-paper PDFs | `id`, `source_id`, `question_text`, `correct_answer`, `topic_tags[]`, `exam_year`, `exam_type`, `module_id`, `subject_id`, `subtopic_id`, `embedding vector(768)`, `created_at` |
+| `past_paper_questions` | 00002 | Questions imported from admin-uploaded CSV / JSON files | `id`, `source_id`, `question_text`, `correct_answer`, `topic_tags[]`, `exam_year`, `exam_type`, `module_id`, `subject_id`, `subtopic_id`, `embedding vector(768)`, `created_at` |
 | `high_yield_topics` | 00002 | Derived frequency table: which subtopics appear most in past papers | `id`, `module_id`, `subtopic_id`, `frequency` (int, count of past papers), `is_high_yield` (bool, freq ≥ 3), `last_recalculated` |
 | `student_memory` | 00003 | Per-user, per-subtopic signal store (weak/strong) | `id`, `user_id`, `subtopic_id`, `module_id`, `signal_type`, `strength`, `value`, `summary_text`, `embedding vector(768)`, `created_at`, `updated_at` |
 
@@ -278,47 +282,64 @@ CREATE INDEX idx_sm_strength        ON student_memory (user_id, strength, update
 
 ---
 
-## 6. Data flow — ingestion (when admin uploads a PDF)
+## 6. Data flow — ingestion
 
-Admin tags the upload at the time of upload as one of: `textbook` | `slides` | `past_paper`. The pipeline forks accordingly.
+Two upload types, two pipelines. Textbooks / slides are PDFs. Past papers are structured CSV or JSON (like AMBOSS / UWorld exports).
 
 ```
-Admin uploads PDF via /admin/upload  (tags: type, module, subject)
-        │
-        ▼
-Next.js Route Handler (server)
-  1. Save file to Supabase Storage (knowledge_sources bucket)
-  2. Insert row into knowledge_sources (status = pending, type = tagged type)
-  3. Kick off ingestion Edge Function
-        │
-        ▼
-  ┌─────┴────────────────────────────┐
-  │  type = textbook | slides        │  type = past_paper
-  ▼                                  ▼
-┌─ Textbook / Slides pipeline ─┐   ┌─ Past Paper pipeline ──────────────┐
-│ 1. Extract text (pdf.js)     │   │ 1. Extract text (pdf.js)           │
-│ 2. Split into sections       │   │ 2. Flash-Lite: "Parse this past    │
-│    → store in                │   │    paper. Return JSON array:        │
-│    knowledge_sections        │   │    [{question, answer, topic_tags,  │
-│ 3. Split sections into       │   │      exam_year, exam_type}]"        │
-│    chunks (300-400 tok,      │   │ 3. For each extracted question:     │
-│    50-tok overlap)           │   │    a. Embed with embedding-001      │
-│ 4. Normalise medical terms   │   │       (RETRIEVAL_DOCUMENT, 768)     │
-│    → terms[] metadata        │   │    b. Insert into                   │
-│ 5. For each chunk:           │   │       past_paper_questions          │
-│    a. Embed (embedding-001,  │   │ 4. Also store each Q as a          │
-│       RETRIEVAL_DOCUMENT)    │   │    knowledge_chunk (type: past_paper│
-│    b. Flash-Lite Q&A extract │   │    ) so it participates in hybrid   │
-│       → sibling qa chunks    │   │    retrieval during drill mode      │
-│    c. INSERT knowledge_chunks│   │ 5. Recalculate high_yield_topics   │
-│ 6. Status → indexed          │   │    for the module:                  │
-└──────────────────────────────┘   │    Flash-Lite batch receives all    │
-                                   │    topic_tags[] across every Q in   │
-                                   │    this module → returns frequency  │
-                                   │    map → UPSERT high_yield_topics   │
-                                   │    (is_high_yield = freq ≥ 3)       │
-                                   │ 6. Status → indexed                 │
-                                   └─────────────────────────────────────┘
+                  ┌── PDF upload (textbook / slides) ──┐
+                  │                                    │
+Admin uploads     │  Next.js Route Handler             │
+via /admin/upload │    1. Save to Supabase Storage     │
+                  │    2. Insert knowledge_sources     │
+                  │       (status = pending)           │
+                  │    3. Kick off Edge Function       │
+                  │                                    │
+                  │  Ingestion pipeline:               │
+                  │    1. Extract text (pdf.js)        │
+                  │    2. Split → sections             │
+                  │       → store knowledge_sections   │
+                  │    3. Split sections → chunks      │
+                  │       (300-400 tok, 50 overlap)    │
+                  │    4. Normalise medical terms      │
+                  │       → terms[] metadata           │
+                  │    5. Per chunk:                   │
+                  │       a. Embed (embedding-001,     │
+                  │          RETRIEVAL_DOCUMENT, 768)  │
+                  │       b. Flash-Lite Q&A extract    │
+                  │          → sibling qa chunks       │
+                  │       c. INSERT knowledge_chunks   │
+                  │    6. Status → indexed             │
+                  └────────────────────────────────────┘
+
+                  ┌── CSV / JSON upload (past papers) ─┐
+                  │                                    │
+Admin uploads     │  Next.js Route Handler             │
+structured file   │    1. Parse CSV → JSON array       │
+                  │    2. Validate schema:             │
+                  │       { question, correct_answer,  │
+                  │         explanation, topic_tags[],  │
+                  │         exam_year, exam_type }     │
+                  │    3. Insert knowledge_sources     │
+                  │       (status = pending,           │
+                  │        type = past_paper)          │
+                  │    4. Kick off Edge Function       │
+                  │                                    │
+                  │  Ingestion pipeline:               │
+                  │    1. For each row:                │
+                  │       a. Embed question + answer   │
+                  │          (embedding-001, 768)      │
+                  │       b. INSERT past_paper_questions│
+                  │       c. Mirror as knowledge_chunk  │
+                  │          (type: past_paper)        │
+                  │    2. Recalculate high_yield_topics│
+                  │       for this module:             │
+                  │       Flash-Lite receives all      │
+                  │       topic_tags[] → frequency map │
+                  │       → UPSERT high_yield_topics   │
+                  │         (is_high_yield = freq ≥ 3) │
+                  │    3. Status → indexed             │
+                  └────────────────────────────────────┘
 ```
 
 ---
@@ -329,11 +350,19 @@ Next.js Route Handler (server)
 Student types / speaks message
         │
         ▼
-  ┌─── Complexity Router (Flash-Lite, ~200 tokens) ───┐
-  │  Returns: SIMPLE | COMPLEX                        │
-  │  COMPLEX → route to DeepSeek R1 (no grounding)   │
-  │  SIMPLE  → route to Gemini Flash (+ grounding)   │
-  └──────┬────────────────────────────────────────────┘
+  ┌─── Mode toggle (student picks, persisted per session) ─┐
+  │  Quick    → Flash, short direct answers, grounding     │
+  │  Tutor    → Flash, structured step-by-step, grounding  │
+  │  Socratic → R1, guiding questions only (Pro-gated)     │
+  └──────┬─────────────────────────┬────────────────────────┘
+         │ Quick / Tutor           │ Socratic
+         ▼                         ▼
+  ┌─ Complexity bump ─┐     (skip bump — R1 always)
+  │  Flash-Lite check │
+  │  COMPLEX? → swap  │
+  │  to R1 for this   │
+  │  one reply only   │
+  └──────┬────────────┘
          │
          ▼
   ┌─── Parallel context assembly (all run concurrently) ───────────────┐
@@ -401,84 +430,57 @@ Student types / speaks message
 
 ## 8. Pro personalisation layer
 
-Free tier gives every student a tutor that knows the textbooks, searches the web, and remembers their struggles. Pro (PKR 3 000 / yr) upgrades that into an **adaptive learning engine**. Every feature below is gated behind `users.is_pro = true` and runs on existing signals — no new data collection required.
+Free tier gives every student a tutor (Quick + Tutor modes) that knows the textbooks, searches the web, and remembers their struggles. Pro (PKR 3 000 / yr) unlocks **Socratic mode** plus a suite of personalised learning tools. Every feature below is gated behind `users.is_pro = true` and runs on existing signals — no new data collection required.
 
 ### 8.1 Feature map
 
 | # | Feature | What it does | Data it uses | Model / where it runs |
 |---|---|---|---|---|
-| P1 | **Spaced-repetition scheduler** | Surfaces the right topic at the right time so retention sticks. Implements a simplified SM-2 variant: each subtopic gets an interval that stretches on correct recall and resets on failure. | `student_memory` (mcq_accuracy, viva_score per subtopic), `progress_matrix.overall_mastery` | Pure SQL + Supabase trigger. No LLM needed — the interval math is deterministic. |
-| P2 | **Adaptive difficulty** | MCQ and Tutor drill questions ramp difficulty based on live performance. Easy → medium → hard as the student gets them right; drops back one tier on two consecutive misses. | `mcq_attempts.is_correct` (last 5), `mcq_questions.difficulty`, `student_memory` strength | Flash-Lite batch: after every 5 MCQs, emit `EASY | MEDIUM | HARD` for next round. Stored in `student_memory` as `signal_type = 'difficulty_level'`. |
-| P3 | **Weekly study-plan generation** | Every Sunday night, a personalised 5-day study plan lands in the student's dashboard. It balances: topics due for spaced repetition, upcoming vivas / exams, high-yield gaps (weak on a high-yield topic = top priority), and learning-style preferences. | `student_memory` (all signals), `high_yield_topics`, `viva_schedules`, `timetable_entries`, `progress_matrix` | Flash (not Lite — this is a reasoning-heavy plan). Runs once / week per Pro user via a scheduled Edge Function. Output stored in `study_plans` table. |
-| P4 | **Exam-readiness score** | A single 0–100 score per module that tells the student "you are X % ready for this exam." Combines: MCQ accuracy on subtopics, viva scores, spaced-repetition completion rate, and high-yield coverage. Displayed on the dashboard module card. | `mcq_statistics`, `viva_bot_sessions`, `progress_matrix`, `high_yield_topics`, spaced-rep completion | Computed as a weighted formula (no LLM). Updated via Supabase trigger on every signal change. Formula in §8.2. |
-| P5 | **Deep-dive mode** | When a student is stuck, they can tap "Go deep" on any topic. The tutor switches to Tier 2 (DeepSeek R1) automatically and runs a structured Socratic drill: asks guiding questions, never gives the answer directly, forces the student to derive it. Session ends with a summary of what they learned. | Same as standard tutor + short-term memory | DeepSeek R1 (Tier 2). Prompt includes Socratic constraints. Free users see this as a locked feature; Pro users get unlimited sessions. |
-| P6 | **Progress narrative** | Once a week, a short paragraph (3–4 sentences) summarises the student's learning journey: what improved, what needs attention, encouragement. Displayed in the dashboard. | `student_memory` diffs (this week vs last week), `progress_matrix` deltas | Flash-Lite batch, weekly, same scheduled job as P3. |
+| P1 | **Weekly study-plan generation** | Every Sunday night, a personalised 5-day study plan lands in the student's dashboard. It balances: upcoming vivas / exams, high-yield gaps (weak on a high-yield topic = top priority), and learning-style preferences. | `student_memory` (all signals), `high_yield_topics`, `viva_schedules`, `timetable_entries`, `progress_matrix` | Flash (not Lite — this is a reasoning-heavy plan). Runs once / week per Pro user via a scheduled Edge Function. Output stored in `study_plans` table. |
+| P2 | **Exam-readiness score** | A single 0–100 score per module that tells the student "you are X % ready for this exam." Combines: MCQ accuracy on subtopics, viva scores, high-yield coverage, and attendance. Displayed on the dashboard module card. | `mcq_statistics`, `viva_bot_sessions`, `progress_matrix`, `high_yield_topics`, `attendance` | Computed as a weighted formula (no LLM). Updated via Supabase trigger on every signal change. Formula in §8.2. |
+| P3 | **Socratic deep-dive** | The **Socratic** mode toggle (Pro-gated). The tutor switches to DeepSeek R1 and runs a structured Socratic drill: asks guiding questions, never gives the answer directly, forces the student to derive it. Session ends with a summary of what they learned. | Same as standard tutor + short-term memory | DeepSeek R1 (Tier 2). Prompt includes Socratic constraints. Free users see mode as locked; Pro users get unlimited Socratic sessions. |
+| P4 | **Progress narrative** | Once a week, a short paragraph (3–4 sentences) summarises the student's learning journey: what improved, what needs attention, encouragement. Displayed in the dashboard. | `student_memory` diffs (this week vs last week), `progress_matrix` deltas | Flash-Lite batch, weekly, same scheduled job as P1. |
 
 ### 8.2 Exam-readiness formula
 
 ```
 readiness = (
-    0.35 × avg_mcq_accuracy_on_high_yield_subtopics
-  + 0.25 × avg_viva_score_on_high_yield_subtopics
-  + 0.20 × spaced_rep_completion_rate          -- % of due items completed this week
-  + 0.15 × high_yield_coverage                 -- % of high-yield subtopics touched ≥ once
-  + 0.05 × attendance_percentage_this_module
+    0.40 × avg_mcq_accuracy_on_high_yield_subtopics
+  + 0.30 × avg_viva_score_on_high_yield_subtopics
+  + 0.20 × high_yield_coverage                 -- % of high-yield subtopics touched ≥ once
+  + 0.10 × attendance_percentage_this_module
 ) × 100
 ```
 
-All terms are 0–1 before multiplication. Score is clamped 0–100. Weights intentionally favour MCQ accuracy and viva — those are the closest proxies to actual exam performance. Attendance is a minor nudge (students who skip class tend to score lower, but it's not causal).
+All terms are 0–1 before multiplication. Score is clamped 0–100. Weights intentionally favour MCQ accuracy and viva — those are the closest proxies to actual exam performance. High-yield coverage rewards students who actively work through the most-tested topics. Attendance is a minor nudge (students who skip class tend to score lower, but it's not causal).
 
-### 8.3 Spaced-repetition interval logic (SM-2 lite)
-
-```
-On correct answer (quality ≥ 3 / 5):
-  if interval_index == 0: next_interval = 1 day
-  if interval_index == 1: next_interval = 3 days
-  else:                   next_interval = prev_interval × easiness_factor
-
-  easiness_factor = max(1.3, EF + (0.1 - (5 - quality) × (0.08 + (5 - quality) × 0.02)))
-  interval_index += 1
-
-On wrong answer (quality < 3):
-  interval_index = 0
-  next_interval = 1 day
-  easiness_factor = max(1.3, EF - 0.2)
-
-Storage: one row per (user_id, subtopic_id) in student_memory
-         signal_type = 'spaced_rep'
-         value = next review timestamp (unix epoch)
-         metadata jsonb stores { interval_index, easiness_factor }
-```
-
-### 8.4 What's free vs Pro — the boundary
+### 8.3 What's free vs Pro — the boundary
 
 | Capability | Free | Pro |
 |---|---|---|
-| AI Tutor (Chat + Tutor mode) | 4 msgs / day | Unlimited |
+| Quick mode | ✓ (4 msgs / day) | ✓ (unlimited) |
+| Tutor mode | ✓ (4 msgs / day) | ✓ (unlimited) |
+| Socratic mode | ✗ | ✓ (unlimited) |
 | High-yield topic highlighting in tutor responses | ✓ (same for everyone — it's a retrieval feature) | ✓ |
 | Past-paper example questions in drill | ✓ (2 per session) | Unlimited |
-| Spaced-repetition scheduler (P1) | ✗ | ✓ |
-| Adaptive difficulty (P2) | ✗ | ✓ |
-| Weekly study plan (P3) | ✗ | ✓ |
-| Exam-readiness score (P4) | ✗ | ✓ |
-| Deep-dive Socratic mode (P5) | ✗ | ✓ |
-| Progress narrative (P6) | ✗ | ✓ |
+| Weekly study plan (P1) | ✗ | ✓ |
+| Exam-readiness score (P2) | ✗ | ✓ |
+| Progress narrative (P4) | ✗ | ✓ |
 | Viva Bot | ✗ | 180 min / mo |
 
-### 8.5 Cost — Pro features add-on
+### 8.4 Cost — Pro features add-on
 
 The Pro features are almost free to run because they reuse signals already collected:
 
 | Feature | Extra AI calls / day (at 125 Pro DAU = 25 % of 500) | Extra cost / day |
 |---|---|---|
-| P2 adaptive difficulty (Flash-Lite, per 5 MCQs) | ~50 | $0.001 |
-| P3 weekly study plan (Flash, once / user / week) | ~18 | $0.015 |
-| P5 deep-dive (R1, ~2 sessions / day across all Pro users) | ~2 | $0.003 |
-| P6 progress narrative (Flash-Lite, weekly) | ~18 | $0.001 |
-| P1 + P4 (pure SQL, no LLM) | 0 | $0.000 |
-| **Pro add-on total** | | **$0.02 / day ≈ $0.60 / month** |
+| P1 weekly study plan (Flash, once / user / week) | ~18 | $0.015 |
+| P3 Socratic deep-dive (R1, ~2 sessions / day across all Pro users) | ~2 | $0.003 |
+| P4 progress narrative (Flash-Lite, weekly) | ~18 | $0.001 |
+| P2 exam-readiness score (pure SQL, no LLM) | 0 | $0.000 |
+| **Pro add-on total** | | **$0.019 / day ≈ $0.57 / month** |
 
-Pro revenue at 125 subscribers × PKR 3 000 / yr = PKR 375 000 / yr. AI cost for Pro features: ~PKR 1 800 / yr. Margin: **99.5 %**.
+Pro revenue at 125 subscribers × PKR 3 000 / yr = PKR 375 000 / yr. AI cost for Pro features: ~PKR 1 700 / yr. Margin: **99.5 %**.
 
 ---
 
@@ -490,10 +492,10 @@ Pro revenue at 125 subscribers × PKR 3 000 / yr = PKR 375 000 / yr. AI cost for
 |---|---|
 | 17 | Write migration `00002_knowledge.sql` — `knowledge_sources`, `knowledge_sections`, `knowledge_chunks`, `past_paper_questions`, `high_yield_topics`, `chat_sessions`, `chat_messages` + all indexes + RLS. Deploy. |
 | 18 | Build **textbook ingestion pipeline**: PDF upload → section split → chunk → normalise terms → embed → Q&A extract (Flash-Lite) → insert. Test with 1 textbook. |
-| 19 | Build **past-paper ingestion pipeline**: PDF upload → Flash-Lite question extraction → embed questions → insert `past_paper_questions` + mirror as `knowledge_chunks` (type: past_paper) → recalculate `high_yield_topics`. Test with 1 past paper. |
+| 19 | Build **past-paper ingestion pipeline**: CSV / JSON upload → validate schema → embed questions → insert `past_paper_questions` + mirror as `knowledge_chunks` (type: past_paper) → recalculate `high_yield_topics`. Test with 1 past-paper file. |
 | 20 | Build **hybrid retrieval function**: dense + FTS + RRF + cross-encoder re-rank + MMR + contextual compression + relevance threshold. Unit-test recall on 50 sample questions from the seeded textbook. |
-| 21 | Build **chat Route Handler**: complexity router → parallel context assembly (textbook RAG + student memory + past-paper intel + short-term) → prompt assembly → Gemini / R1 stream via SSE. |
-| 22 | Build **chat UI**: streaming message bubbles, inline citations ([T], [W], [P]), session list, Chat vs Tutor mode toggle. |
+| 21 | Build **chat Route Handler**: read persisted mode (Quick / Tutor / Socratic) → optional complexity bump (Quick / Tutor only) → parallel context assembly (textbook RAG + student memory + past-paper intel + short-term) → prompt assembly → Gemini Flash or R1 stream via SSE. |
+| 22 | Build **chat UI**: streaming message bubbles, inline citations ([T], [W], [P]), session list, **Quick / Tutor / Socratic mode toggle** (Socratic shows Pro paywall CTA for free users). |
 | 23 | Wire **memory distillation**: post-session idle detection → Flash-Lite extract struggles/understood → UPSERT `student_memory` → decay-on-improvement. Integration test. |
 | 24 | Seed 2–3 textbooks + 1 past paper via admin dashboard. Full end-to-end smoke test: ask a question, verify citations, verify high-yield block appears, verify memory persists across sessions. |
 
@@ -502,11 +504,9 @@ Pro revenue at 125 subscribers × PKR 3 000 / yr = PKR 375 000 / yr. AI cost for
 | Day | Work item |
 |---|---|
 | 25 | Write migration `00003_student_memory.sql` — `student_memory` table + indexes + RLS + Supabase triggers (mcq_attempts → UPSERT signal, viva_bot_session completion → UPSERT signal). |
-| 26 | Build **spaced-repetition engine** (P1): SM-2 lite logic as a Supabase function. Build the "due today" query that surfaces subtopics whose `next_review` timestamp has passed. Wire into dashboard. |
-| 27 | Build **adaptive difficulty** (P2): Flash-Lite classifier after every 5 MCQs → emit difficulty level → store in `student_memory`. Wire into MCQ Solver so next round respects the level. |
-| 28 | Build **exam-readiness score** (P4): computed column via trigger using the §8.2 formula. Display on module cards in dashboard. Build **weekly study plan** (P3): scheduled Edge Function (Sunday 23:00 PKT) → Flash generates plan → store in `study_plans` table → display on dashboard. |
-| 29 | Build **Deep-dive / Socratic mode** (P5): Pro-gated route handler that forces Tier 2 (R1) + Socratic system prompt. End-of-session summary. Build **progress narrative** (P6): same weekly job as P3, Flash-Lite paragraph → store + display. |
-| 30 | Pro paywall UI: gate all P1–P6 features behind `is_pro` check. Show "upgrade" CTA on locked features. Smoke test full Pro flow end-to-end. |
+| 26 | Build **exam-readiness score** (P2): computed column via trigger using the §8.2 formula. Display on module cards in dashboard. Build **weekly study plan** (P1): scheduled Edge Function (Sunday 23:00 PKT) → Flash generates plan → store in `study_plans` table → display on dashboard. |
+| 27 | Build **Socratic deep-dive** (P3): ensure Socratic mode toggle in chat UI routes to R1 + Socratic system-prompt constraints. End-of-session summary. Build **progress narrative** (P4): same weekly job as P1, Flash-Lite paragraph → store + display. |
+| 28 | Pro paywall UI: gate Socratic mode + P1–P4 features behind `is_pro` check. Show "upgrade" CTA on locked Socratic toggle and Pro dashboard widgets. Smoke test full Pro flow end-to-end. |
 
 ---
 
@@ -522,6 +522,5 @@ Pro revenue at 125 subscribers × PKR 3 000 / yr = PKR 375 000 / yr. AI cost for
 - [Best RAG architectures for medical education — MDPI / Springer surveys](https://www.mdpi.com/2076-3417/16/2/963)
 - [Gemini Guided Learning Mode — Tech & Learning](https://www.techlearning.com/how-to/geminis-guided-learning-mode-from-google-ai-what-educators-need-to-know)
 - [Mastering the Gemini Ecosystem 2026 — Medium](https://medium.com/@kuntal-c/mastering-the-gemini-ecosystem-a-2026-guide-to-production-grade-ai-agents-53cc79130cab)
-- [SM-2 Spaced Repetition Algorithm](https://en.wikipedia.org/wiki/SuperMemo#Algorithm_SM-2)
-- [Adaptive difficulty in educational AI — Khan Academy eng blog](https://engineering.khanacademy.org/)
+- [Socratic method in educational AI — Khan Academy eng blog](https://engineering.khanacademy.org/)
 - Skills consulted: `rag-engineer`, `ai-engineer`, `rag-implementation`, `hybrid-search-implementation`, `embedding-strategies`, `ai-product`, `llm-app-patterns`, `memory-systems`
