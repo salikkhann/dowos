@@ -75,6 +75,13 @@ Everything else → SIMPLE → Tier 1 (Flash + grounding).
 | Lost & found match scoring | Flash-Lite (batch) | 3 | async | 500 / 100 |
 | Complexity classifier | Flash-Lite | 3 | < 200 ms | 200 / 50 |
 | Embedding (all) | gemini-embedding-001 | — | < 100 ms | 768-dim output |
+| Past-paper Q extraction (ingestion) | Flash-Lite (batch) | 3 | async | 3 000 / 1 200 |
+| High-yield frequency scoring (ingestion) | Flash-Lite (batch) | 3 | async | 2 000 / 300 |
+| **— Pro features —** | | | | |
+| Adaptive difficulty classifier (P2) | Flash-Lite (batch) | 3 | async | 500 / 50 |
+| Weekly study-plan generation (P3) | Flash | 1 | async (scheduled) | 5 000 / 800 |
+| Deep-dive Socratic drill (P5) | DeepSeek R1 | 2 | < 4 s first token | 4 500 / 1 500 |
+| Progress narrative (P6) | Flash-Lite (batch) | 3 | async (scheduled) | 2 000 / 200 |
 
 ### 3.4 Why not use a single model everywhere?
 
@@ -109,6 +116,9 @@ Every piece of student data maps to a **signal strength** and an **area** (subto
 | Attendance on module classes | `attendance` / `attendance_summary` | **Weak** — correlates with struggle but isn't direct | Daily |
 | Time spent on an MCQ (> 2× median for that question) | `mcq_attempts.time_spent_seconds` | **Weak** — indirect signal | Every MCQ submission |
 | Module test marks (when available) | `annual_exam_checklist` | **Strong** — objective exam signal | Admin uploads results |
+| High-yield gap (weak on a high-yield subtopic) | `student_memory` × `high_yield_topics` | **Strong** — composite: the student is weak AND the topic is exam-frequent | Recalculated whenever either signal changes |
+| Spaced-rep overdue (Pro) | `student_memory` (signal_type = spaced_rep, value < now()) | **Strong** — deterministic schedule miss | Checked on every tutor request |
+| Adaptive difficulty level (Pro) | `student_memory` (signal_type = difficulty_level) | **Strong** — set by Flash-Lite after every 5 MCQs | Every 5 MCQ submissions |
 
 ### 4.3 Storage — the `student_memory` table
 
@@ -120,7 +130,7 @@ CREATE TABLE student_memory (
   user_id         uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   subtopic_id     uuid REFERENCES subtopics(id),          -- NULL = module-level
   module_id       uuid REFERENCES modules(id),
-  signal_type     text NOT NULL,                          -- 'mcq_accuracy' | 'viva_score' | 'chat_struggle' | 'time_pressure' | 'attendance' | 'self_report'
+  signal_type     text NOT NULL,                          -- 'mcq_accuracy' | 'viva_score' | 'chat_struggle' | 'time_pressure' | 'attendance' | 'self_report' | 'high_yield_gap' | 'spaced_rep' | 'difficulty_level'
   strength        text NOT NULL CHECK (strength IN ('weak', 'strong')),
   value           numeric,                                -- e.g. 0.42 accuracy, or score 18/25
   summary_text    text,                                   -- human-readable: "struggles with coronary circulation"
