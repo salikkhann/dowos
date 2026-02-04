@@ -39,6 +39,9 @@ All in-app payments use **Dow Credits** (manual top-up, verified in 5–10 min).
 9. **Commit often, branch often.** Never push directly to `main`. Feature branches only.
 10. **Ask before creating files.** Especially documentation — confirm content before writing.
 11. **Always update the session doc.** At the end of every session (or when switching context), update `docs/sessions/` with what was done, what state the project is in, and what comes next. This is mandatory — never skip it.
+12. **Never read `docs/02_DATABASE_SCHEMA.md` in full at session start.** It is 925 lines. Query the live schema via the Supabase MCP server, or read only the specific table block you need. Same rule for any doc over 200 lines — read surgically, not wholesale.
+13. **Compact manually at task boundaries.** Use `/compact` after finishing a feature or resolving a debug session. Never let auto-compaction fire mid-task — it loses the artifact trail (which files were touched and what state they're in).
+14. **Model discipline.** Use Sonnet for all day-to-day coding. Switch to Opus only for the 6 architecture decision days (Days 3–8 in the roadmap) where deep tradeoff reasoning is needed. Opus is 5× slower — do not use it for routine writes.
 
 ---
 
@@ -139,3 +142,24 @@ docs/                     # All project docs (PRD, schema, design, sessions, roa
 6. **Database changes:** Edit `docs/02_DATABASE_SCHEMA.md` first, get sign-off, then apply via Supabase Studio or migrations.
 7. **Design changes:** Reference `docs/4_DESIGN_SYSTEM.md` and `docs/5_UXUI_GUIDELINES.md` before touching any UI.
 8. **Session logging:** Every session must end with an update to `docs/sessions/`. If a new session file is needed, create one. Never leave the session log stale.
+
+---
+
+## Skills & Tooling
+
+Skills live at `C:/Users/salik/.claude/skills/`. Invoke via the Skill tool by name.
+
+**Key skills for this project and when to use them:**
+| Skill | Use when |
+|---|---|
+| `nextjs-app-router-patterns` | Building any Next.js page, layout, or data-fetching pattern |
+| `nextjs-supabase-auth` | Anything touching auth: middleware, session, login, signup |
+| `ai-engineer` | RAG pipeline, Gemini integration, embedding, vector search |
+| `rag-engineer` | Chunking, retrieval, re-ranking, pgvector queries |
+| `context-compression` | Session is getting long — before you compact, read this |
+| `strategic-compact` | Tells you *when* to `/compact`. Read before any long build session. |
+| `tailwind-design-system` | New UI components — check tokens and patterns first |
+| `react-patterns` | Component architecture, hooks, state decisions |
+| `security-review` | Before any auth, payment, or admin route ships |
+
+**Supabase MCP** is wired in `.claude/settings.json`. Use it to query live schema instead of reading `docs/02_DATABASE_SCHEMA.md`.
