@@ -34,7 +34,9 @@ yarn-error.log*
 .env*
 !.env.local.example
 
-# claude local overrides
+# claude — settings.json has MCP tokens, never commit it.
+# settings.local.json has permissions, also local-only.
+.claude/settings.json
 .claude/settings.local.json
 
 # vercel
