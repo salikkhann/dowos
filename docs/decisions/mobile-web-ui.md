@@ -39,7 +39,7 @@ Both mobile and desktop are first-class experiences — roughly equal usage spli
 | 1 | Dashboard | `layout-dashboard` | `/dashboard` |
 | 2 | Education | `book-open` | `/education` |
 | 3 | AI Tutor | `sparkles` | `/ai` |
-| 4 | Community | `users` | `/community` |
+| 4 | Campus | `building-2` | `/campus` |
 | 5 | Maps | `map-pin` | `/maps` |
 
 That's it. Five items. Fits a 375 px screen with ≥ 44 px touch targets each. Everything else is reachable from within these five.
@@ -65,8 +65,12 @@ The sidebar has two sections: **Main** (always visible) and **Study** (the Educa
 │  ⚡  Quick Summaries    [/education/summaries]   ← Phase 2
 │  🃏  Flashcards         [/education/flashcards]  ← Phase 2
 │                                 │
-│  ── Explore ──                  │
-│  👥  Community          [/community]
+│  ── Campus ──                   │  ← replaces Explore; see ui-page-structure.md
+│  🔍  Lost & Found       [/campus/lost-found]
+│  🕌  Prayer Times       [/campus/prayers]
+│  🍕  DowEats            [/campus/doweats]        ← Phase 2
+│  👕  Merch              [/campus/merch]          ← Phase 2
+│  📚  Marketplace        [/campus/marketplace]    ← Phase 2
 │  📍  Maps               [/maps]
 │                                 │
 │  ── System ──                   │  ← desktop-only extras
@@ -162,8 +166,12 @@ export const sidebarItems = [
   // { section: 'Study', label: 'Saved Questions', icon: 'bookmark',       route: '/education/saved' },
   // { section: 'Study', label: 'Quick Summaries', icon: 'zap',            route: '/education/summaries' },
   // { section: 'Study', label: 'Flashcards',      icon: 'layers',         route: '/education/flashcards' },
-  { section: 'Explore', label: 'Community',      icon: 'users',            route: '/community' },
-  { section: 'Explore', label: 'Maps',           icon: 'map-pin',          route: '/maps' },
+  { section: 'Campus',  label: 'Lost & Found',   icon: 'search',           route: '/campus/lost-found' },
+  { section: 'Campus',  label: 'Prayer Times',   icon: 'mosque',           route: '/campus/prayers' },
+  { section: 'Campus',  label: 'DowEats',        icon: 'utensils',         route: '/campus/doweats' },   // Phase 2
+  { section: 'Campus',  label: 'Merch',          icon: 'shirt',            route: '/campus/merch' },     // Phase 2
+  { section: 'Campus',  label: 'Marketplace',    icon: 'tag',              route: '/campus/marketplace' }, // Phase 2
+  { section: 'Campus',  label: 'Maps',           icon: 'map-pin',          route: '/maps' },
   { section: 'System',  label: 'Settings',       icon: 'settings',         route: '/settings' },
   { section: 'System',  label: 'Profile',        icon: 'user',             route: '/profile' },
   { section: 'System',  label: 'Admin',          icon: 'shield',           route: '/admin', roleGate: 'admin' },
@@ -174,7 +182,7 @@ export const bottomNavItems = [
   { label: 'Dashboard',  icon: 'layout-dashboard', route: '/dashboard' },
   { label: 'Education',  icon: 'book-open',        route: '/education' },
   { label: 'AI Tutor',   icon: 'sparkles',         route: '/ai' },
-  { label: 'Community',  icon: 'users',            route: '/community' },
+  { label: 'Campus',     icon: 'building-2',       route: '/campus' },
   { label: 'Maps',       icon: 'map-pin',          route: '/maps' },
 ];
 ```

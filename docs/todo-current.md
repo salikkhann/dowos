@@ -27,8 +27,9 @@ Tick items off as you go. Update or re-create this file when the list drains.
 - [ ] **Day 7 – Mobile delivery:** Capacitor vs PWA comparison, write `docs/decisions/mobile-delivery.md`
 - [ ] **Day 8 – Viva orchestration:** LangGraph vs state machine, write `docs/decisions/viva-bot-orchestration.md`
 - [ ] **Day 9 – Sign-off:** Review all 6 decision docs for consistency, update `docs/FINAL_LOCKED_DECISIONS.md`
-- [ ] **Education tab structure:** Decide what lives under the Education tab, how it's organised (tabs vs sections vs dedicated pages), and how MCQ / Viva / Progress relate to each other in the nav. Write `docs/decisions/education-tab.md`
-- [ ] **Mobile vs Web UI:** Decide how much the mobile (Capacitor) UI diverges from the web UI — shared layout or separate shells, nav patterns, component reuse boundaries. Write `docs/decisions/mobile-web-ui.md`
+- [x] **Education tab structure:** Cards grid landing, MCQ module-picker → source toggle, Phase 2 card slots. Write `docs/decisions/education-tab.md`
+- [x] **Mobile vs Web UI:** One component tree, two layout wrappers. 5-item mobile bottom nav; desktop sidebar expands Study + Campus sections flat. Config-driven nav. Write `docs/decisions/mobile-web-ui.md`
+- [x] **All-pages UI structure:** Dashboard widgets (exam countdown, timetable mini + tap-to-mark, attendance warning, announcements, prayers, L&F), Campus tab (DowEats/Merch/Marketplace coming-soon + L&F + Prayers), Prayer Times page (azan calc + masjid schedules + qibla + daily verse), Announcements (audience-targeted, priority-layered), Profile, AI Chat layout, Maps tab switcher, full route tree. Write `docs/decisions/ui-page-structure.md`
 - [x] Create `docs/decisions/` folder (one doc per decision, all decisions live here going forward)
 
 ## Phase 2 – Core Shell & Admin (Days 10–14, early start)
