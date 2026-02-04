@@ -20,7 +20,7 @@ From `FINAL_LOCKED_DECISIONS.md`, `00_DISCOVERY_RESOLVED.md`, and `model-selecti
 | Knowledge corpus | 25 medical textbooks + Dow slides (PDFs) + **past-paper question banks** (CSV / JSON via admin dashboard) |
 | High-yield layer | Past-paper CSV/JSON → embed + insert → Flash-Lite batch scores topic frequency → stored in `high_yield_topics`; injected into every tutor prompt |
 | Rate limits | Soft 2 msgs/day (+5 s delay), Hard 4 msgs/day (blocked), Pro = unlimited |
-| Tutor modes | **Quick** (fast answers, all users) / **Tutor** (step-by-step, all users) / **Socratic** (guiding questions only, Pro-gated) — student-selected toggle |
+| Tutor modes | **Auto** (default — complexity router picks Flash or R1 per query) / **Quick** (Flash, fast answers) / **Tutor** (Flash, step-by-step) / **Socratic** (R1, guiding questions, Pro-gated) — student-selected toggle |
 | Pro personalisation | Weekly study plans, exam-readiness scores, Socratic deep-dive, progress narrative — all Pro-only; see §8 |
 | Cost target | ~$41 / month at 500 DAU (full breakdown in `model-selection.md` §5) |
 
@@ -78,20 +78,23 @@ Move vectors out of Supabase into a dedicated store.
 └────────────────────────────┬─────────────────────────────────────────┘
                              │
                              ▼
-          ┌─── Mode Toggle (student picks) ───┐
-          │  Quick    → Flash (grounding)     │
-          │  Tutor    → Flash (grounding)     │
-          │  Socratic → DeepSeek R1 (Pro)     │
-          └──────┬────────────────────────────┘
-                 │ Quick / Tutor          │ Socratic
-                 ▼                        ▼
-          ┌─ Bump check ─┐        (R1 always)
-          │ Flash-Lite   │
-          │ COMPLEX? →   │
-          │ swap to R1   │
-          │ (one reply)  │
-          └──────┬───────┘
-                 │
+       ┌─── Mode Toggle (student picks; Auto = default) ───┐
+       │  Auto      → Complexity Router decides           │
+       │  Quick     → Flash (grounding)                   │
+       │  Tutor     → Flash (grounding)                   │
+       │  Socratic  → DeepSeek R1 (Pro-gated)            │
+       └──────┬──────────────┬────────────┬──────────────┘
+              │ Auto         │ Quick/Tutor│ Socratic
+              ▼              ▼            ▼
+       ┌─ Complexity ─┐ ┌─ Bump ─┐  (R1 always)
+       │  Router      │ │ check  │
+       │ Flash-Lite   │ │Flash-  │
+       │ SIMPLE →     │ │Lite    │
+       │   Flash      │ │COMPLEX?│
+       │ COMPLEX →    │ │→ R1    │
+       │   R1         │ │(1 msg) │
+       └──────┬───────┘ └───┬────┘
+              │             │
                      │                 │
      ┌───────────────┼──────────────┼──────────────┼───────────────┐
      ▼               ▼              ▼              ▼               ▼
@@ -110,7 +113,7 @@ Move vectors out of Supabase into a dedicated store.
   All retrieved context assembled into a single prompt:
   ┌────────────────────────────────────────────────────────────┐
   │  System prompt                                             │
-  │    • persona (Quick / Tutor / Socratic tone)               │
+  │    • persona (Auto / Quick / Tutor / Socratic tone)        │
   │    • learning_style + explanation_depth                    │
   │  Short-term memory              ≤ 1 500 tokens            │
   │  Student memory signals         ≤ 1 000 tokens            │
@@ -118,7 +121,7 @@ Move vectors out of Supabase into a dedicated store.
   │  Textbook chunks [T1…T5]       ≤ 4 200 tokens            │
   │  Citation instructions                                     │
   │    • [T n] = textbook  [W n] = web  [P n] = past paper   │
-  │  google_search tool (Quick / Tutor only — not Socratic)   │
+  │  google_search tool (Auto / Quick / Tutor — not Socratic) │
   │  ─────────────────────────────────────────                 │
   │  Total context budget           ≤ 8 000 tokens            │
   └────────────────────────────────────────────────────────────┘
@@ -189,7 +192,7 @@ Move vectors out of Supabase into a dedicated store.
 | No robotic pauses | Stream text as it arrives — do not buffer the full response before rendering. TanStack Query `useInfiniteQuery` or a simple `ReadableStream` consumer on the client handles progressive rendering. |
 | Citation anchoring | Citations appear inline as the relevant sentence streams in, not as a footnote block at the end. Frontend maps `groundingSupports` segment indices to the streamed text positions. |
 | Memory continuity | Last 10 messages (short-term) are prepended to every request so the model does not repeat itself or lose thread. Stored in `chat_messages` table, cached in TanStack Query. |
-| Tutor vs Chat tone | System prompt switches voice: Chat = peer/friend ("hey, good question —"); Tutor = structured guide ("Step 1: …"). Learning style and depth from onboarding profile drive the detail level. |
+| Mode tones | System prompt switches voice per mode: Auto = balanced peer ("let me walk you through…"); Quick = direct ("here's the answer —"); Tutor = structured guide ("Step 1: …"); Socratic = questioning ("what do you think happens when…"). Learning style and depth from onboarding profile drive the detail level within each tone. |
 
 ### 4.6 Long-term memory — `student_memory` signal system
 
@@ -237,7 +240,7 @@ After 10 min of inactivity or navigation away, a background job:
 | `knowledge_sources` | 00002 | Registry of uploaded PDFs / slide decks | `id`, `title`, `file_url`, `module_id`, `uploaded_by`, `status` (`pending` \| `indexed` \| `error`) |
 | `knowledge_sections` | 00002 | Full-text sections (parent documents for contextual compression) | `id`, `source_id`, `section_path` (e.g. `"Ch3 > Coronary Circulation"`), `full_text`, `module_tag`, `subject_tag` |
 | `knowledge_chunks` | 00002 | Pre-chunked, embedded child segments | `id`, `source_id`, `parent_section_id` (FK → `knowledge_sections`), `text`, `embedding vector(768)`, `module_tag`, `subject_tag`, `subtopic_tag`, `chunk_type` (`text` \| `qa`), `terms[]` (normalised medical terms), `metadata jsonb` |
-| `chat_sessions` | 00002 | One row per conversation | `id`, `user_id`, `mode` (`quick` \| `tutor` \| `socratic`), `created_at`, `last_active_at` |
+| `chat_sessions` | 00002 | One row per conversation | `id`, `user_id`, `mode` (`auto` \| `quick` \| `tutor` \| `socratic`), `created_at`, `last_active_at` |
 | `chat_messages` | 00002 | Individual messages with role + content | `id`, `session_id`, `role` (`user` \| `assistant`), `content`, `citations jsonb`, `tokens_used`, `created_at` |
 | `past_paper_questions` | 00002 | Questions imported from admin-uploaded CSV / JSON files | `id`, `source_id`, `question_text`, `correct_answer`, `topic_tags[]`, `exam_year`, `exam_type`, `module_id`, `subject_id`, `subtopic_id`, `embedding vector(768)`, `created_at` |
 | `high_yield_topics` | 00002 | Derived frequency table: which subtopics appear most in past papers | `id`, `module_id`, `subtopic_id`, `frequency` (int, count of past papers), `is_high_yield` (bool, freq ≥ 3), `last_recalculated` |
@@ -350,21 +353,24 @@ structured file   │    1. Parse CSV → JSON array       │
 Student types / speaks message
         │
         ▼
-  ┌─── Mode toggle (student picks, persisted per session) ─┐
-  │  Quick    → Flash, short direct answers, grounding     │
-  │  Tutor    → Flash, structured step-by-step, grounding  │
-  │  Socratic → R1, guiding questions only (Pro-gated)     │
-  └──────┬─────────────────────────┬────────────────────────┘
-         │ Quick / Tutor           │ Socratic
-         ▼                         ▼
-  ┌─ Complexity bump ─┐     (skip bump — R1 always)
-  │  Flash-Lite check │
-  │  COMPLEX? → swap  │
-  │  to R1 for this   │
-  │  one reply only   │
-  └──────┬────────────┘
-         │
-         ▼
+  ┌─── Mode toggle (student picks, persisted per session; Auto = default) ─┐
+  │  Auto      → complexity router decides Flash or R1 per query          │
+  │  Quick     → Flash, short direct answers, grounding                   │
+  │  Tutor     → Flash, structured step-by-step, grounding                │
+  │  Socratic  → R1, guiding questions only (Pro-gated)                   │
+  └──────┬───────────────────┬──────────────┬─────────────────────────────┘
+         │ Auto              │ Quick / Tutor│ Socratic
+         ▼                   ▼              ▼
+  ┌─ Complexity Router ─┐ ┌─ Bump ─┐  (R1 always —
+  │  Flash-Lite emits   │ │ check  │   skip router)
+  │  SIMPLE → Flash     │ │Flash-  │
+  │  COMPLEX → R1       │ │Lite    │
+  │  (every query)      │ │COMPLEX?│
+  └──────┬──────────────┘ │→ R1    │
+         │                │(1 msg) │
+         │                └───┬────┘
+         │                    │
+         ▼                    ▼
   ┌─── Parallel context assembly (all run concurrently) ───────────────┐
   │                                                                    │
   │  A. Textbook RAG                                                   │
@@ -398,7 +404,8 @@ Student types / speaks message
                                ▼
   ┌─── Prompt assembly ────────────────────────────────────────────────┐
   │  System prompt:                                                    │
-  │    • persona (Chat peer tone / Tutor guide tone)                   │
+  │    • persona (Auto balanced / Quick direct / Tutor guide /         │
+  │              Socratic questioning)                                  │
   │    • learning_style + explanation_depth (from onboarding)          │
   │    • [STUDENT CONTEXT] block (memory C)                            │
   │    • [HIGH-YIELD] block (past-paper B)                             │
@@ -409,7 +416,7 @@ Student types / speaks message
   │    • textbook chunks (A)                                           │
   │    • past-paper examples (B, if any)                               │
   │  Tool:                                                             │
-  │    • google_search (Tier 1 / Flash only)                           │
+  │    • google_search (Auto / Quick / Tutor — Flash only)             │
   │  Total: ≤ 8 000 tokens                                            │
   └────────────────────────────┬───────────────────────────────────────┘
                                │
@@ -458,6 +465,7 @@ All terms are 0–1 before multiplication. Score is clamped 0–100. Weights int
 
 | Capability | Free | Pro |
 |---|---|---|
+| Auto mode (default) | ✓ (4 msgs / day) | ✓ (unlimited) |
 | Quick mode | ✓ (4 msgs / day) | ✓ (unlimited) |
 | Tutor mode | ✓ (4 msgs / day) | ✓ (unlimited) |
 | Socratic mode | ✗ | ✓ (unlimited) |
@@ -494,8 +502,8 @@ Pro revenue at 125 subscribers × PKR 3 000 / yr = PKR 375 000 / yr. AI cost for
 | 18 | Build **textbook ingestion pipeline**: PDF upload → section split → chunk → normalise terms → embed → Q&A extract (Flash-Lite) → insert. Test with 1 textbook. |
 | 19 | Build **past-paper ingestion pipeline**: CSV / JSON upload → validate schema → embed questions → insert `past_paper_questions` + mirror as `knowledge_chunks` (type: past_paper) → recalculate `high_yield_topics`. Test with 1 past-paper file. |
 | 20 | Build **hybrid retrieval function**: dense + FTS + RRF + cross-encoder re-rank + MMR + contextual compression + relevance threshold. Unit-test recall on 50 sample questions from the seeded textbook. |
-| 21 | Build **chat Route Handler**: read persisted mode (Quick / Tutor / Socratic) → optional complexity bump (Quick / Tutor only) → parallel context assembly (textbook RAG + student memory + past-paper intel + short-term) → prompt assembly → Gemini Flash or R1 stream via SSE. |
-| 22 | Build **chat UI**: streaming message bubbles, inline citations ([T], [W], [P]), session list, **Quick / Tutor / Socratic mode toggle** (Socratic shows Pro paywall CTA for free users). |
+| 21 | Build **chat Route Handler**: read persisted mode → Auto runs full complexity router (Flash-Lite → SIMPLE/COMPLEX); Quick/Tutor run Flash + optional bump; Socratic runs R1 directly → parallel context assembly → prompt assembly → stream via SSE. |
+| 22 | Build **chat UI**: streaming message bubbles, inline citations ([T], [W], [P]), session list, **Auto / Quick / Tutor / Socratic mode toggle** (Auto = default; Socratic shows Pro paywall CTA for free users). |
 | 23 | Wire **memory distillation**: post-session idle detection → Flash-Lite extract struggles/understood → UPSERT `student_memory` → decay-on-improvement. Integration test. |
 | 24 | Seed 2–3 textbooks + 1 past paper via admin dashboard. Full end-to-end smoke test: ask a question, verify citations, verify high-yield block appears, verify memory persists across sessions. |
 

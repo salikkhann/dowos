@@ -47,6 +47,8 @@ Three tiers, chosen by latency + reasoning depth + cost:
 
 ### 3.2 Complexity router — when does Tier 2 fire?
 
+The complexity router is the engine behind **Auto mode** (the default tutor mode). When the student is in Auto, every query passes through this classifier first. Quick and Tutor modes skip the full router and go straight to Flash (with a lightweight bump safety net). Socratic skips it entirely and always uses R1.
+
 A lightweight classifier runs *before* the main call. It costs one Flash-Lite call (~200 input tokens, ~50 output tokens = $0.00001). It returns a single token: `SIMPLE` or `COMPLEX`.
 
 **COMPLEX fires when any of these are true:**
@@ -65,8 +67,10 @@ Everything else → SIMPLE → Tier 1 (Flash + grounding).
 
 | Feature | Model | Tier | Latency | Est. tokens per call (in / out) |
 |---|---|---|---|---|
-| AI Tutor — chat reply | Flash | 1 | < 1 s first token | 4 000 / 600 |
-| AI Tutor — complex reasoning | DeepSeek R1 | 2 | 2–4 s first token | 4 000 / 1 200 |
+| AI Tutor — Auto SIMPLE | Flash | 1 | < 1 s first token | 4 000 / 600 |
+| AI Tutor — Auto COMPLEX | DeepSeek R1 | 2 | 2–4 s first token | 4 000 / 1 200 |
+| AI Tutor — Quick / Tutor reply | Flash | 1 | < 1 s first token | 4 000 / 600 |
+| AI Tutor — Socratic drill | DeepSeek R1 | 2 | 2–4 s first token | 4 500 / 1 500 |
 | Viva Bot — score + feedback | Flash | 1 | < 1 s | 2 000 / 400 |
 | Viva Bot — strict-mode deep eval | DeepSeek R1 | 2 | 2–4 s | 2 000 / 800 |
 | MCQ AI explanation generation | Flash-Lite (batch) | 3 | async | 1 500 / 500 |
