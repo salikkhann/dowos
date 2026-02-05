@@ -60,11 +60,7 @@ CREATE POLICY "Admins can read all api_usage_log"
   ON api_usage_log
   FOR SELECT
   USING (
-    EXISTS (
-      SELECT 1 FROM users
-      WHERE users.id = auth.uid()
-        AND users.role = 'admin'
-    )
+    auth.jwt() ->> 'role' = 'admin'
   );
 
 -- No write access for students (only server-side inserts via service role)
@@ -145,11 +141,7 @@ CREATE POLICY "Admins can read all app_events"
   ON app_events
   FOR SELECT
   USING (
-    EXISTS (
-      SELECT 1 FROM users
-      WHERE users.id = auth.uid()
-        AND users.role = 'admin'
-    )
+    auth.jwt() ->> 'role' = 'admin'
   );
 
 -- No update/delete by students
