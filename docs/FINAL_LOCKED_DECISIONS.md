@@ -1,342 +1,83 @@
-# DowOS - Final Locked Decisions (All 100+ Questions Answered)
+# DowOS — Locked Decisions Index
 
-## DESIGN DECISIONS
+**Last updated:** 2026-02-05 | **Status:** All decisions below are LOCKED.
 
-### Color Palette - LOCKED ✅
-**Option A: Medical + Professional**
-- Primary: Dark Navy (#1A2B4C)
-- Secondary: Offwhite/Paper (#F5F5F7)
-- Accent 1: Teal (#00A896) - medical trust
-- Accent 2: Gold (#D4A574) - premium, prestige
-- Accent 3: Red (#E74C3C) - alerts, important
-**Feel:** Professional, trustworthy, premium
-
-### Typography - NEEDS RECOMMENDATION
-Q36a: User wants recommendation based on app profile
-**My Suggestion:** Pair 2 (Outfit + Inter + JetBrains)
-- Headers: **Outfit Bold** (geometric, bold, distinct, student-friendly)
-- Body: **Inter Regular** (clean, highly readable)
-- Accent: **JetBrains Mono** (technical, for code/system info)
-**Reasoning:**
-- Outfit = bold, modern, confident (medical students)
-- Inter = best readability (lots of text content)
-- JetBrains = tech-forward (for viva scores, metrics)
-- **Perfect for DowOS:** Professional but youthful
-
-### Logo - LOCKED ✅
-- Text-only: "DowOS" in Outfit Bold
-- Position: Top-left navbar
-- Alternative considered: "Dow Central" (rejected, staying with DowOS)
-
-### Components - LOCKED ✅
-- Buttons: Slightly rounded (4-6px) - professional
-- Cards: Glassmorphism + subtle shadow - modern depth
-- Input fields: Rounded borders with subtle shadow - friendly professional
-
-### Dark Mode - LOCKED ✅
-**Option A: Dark navy background**
-- Background: Very dark navy (#0F1823)
-- Text: Offwhite (#F5F5F7)
-- Accents: Lighter versions (Teal → Cyan, Gold → Light Gold)
-- Red: Stays visible for alerts
+This file is the single source of truth for "what's decided and where's the detail."
+Every decision has a dedicated doc in `docs/decisions/`. This index gives you the one-line status and a pointer. Do not re-debate anything marked LOCKED.
 
 ---
 
-## TECHNICAL DECISIONS
+## Decision docs (each file is the authoritative spec)
 
-### Viva Calendar & Scheduling - LOCKED ✅
-**Timeline:**
-- Schedule announced 1 week before viva dates
-- Uses normal university class timings
-- Automatically updates timetable when schedule posted
-- **Viva Toggle in Timetable:**
-  - Shows which viva on which day
-  - Shows applicable roll numbers (lab group or clinical group)
-  - Sometimes group-wise, sometimes number-wise
-
-**Lab Groups vs Clinical Groups:**
-- Lab groups: 1st-2nd year (6 groups: A-F)
-- Clinical groups: 3rd+ year (14-15 students per group, rotate wards)
-
-### Dow Credits Update - LOCKED ✅
-**Manual Processing with Notification**
-- Student loads credits via Easypaisa/JazzCash
-- Payment processed immediately (Easypaisa handles it)
-- Credits appear in 5-10 minutes (manual verification)
-- Automated processing in Phase 2
-
-### Marketplace Listings - LOCKED ✅
-- Students see new listings **instantly** (real-time)
-- Real-time WebSocket updates via Supabase Realtime
-
-### DowEats Rider Tracking - LOCKED ✅
-- GPS updates every 30 seconds (locked)
-- Order status updates: Real-time via WebSocket
-
-### Viva Bot Scoring - LOCKED ✅
-**Three Modes with Different Scoring:**
-1. **Strict Mode** - High standards, harsh scoring
-   - Correctness: 25 points (must be nearly perfect)
-   - Confidence: 10 points (expects solid confidence)
-   - Articulation: 10 points (must articulate clearly)
-   - Adaptive bonus: 5 points (challenging follow-ups)
-   - **Total: 50 points**
-
-2. **Friendly Mode** - Supportive, encouraging
-   - Correctness: 25 points (partial credit given)
-   - Confidence: 15 points (encouraging unsure answers)
-   - Articulation: 7 points (lenient on articulation)
-   - Adaptive bonus: 3 points (gentle difficulty increase)
-   - **Total: 50 points**
-
-3. **In-Between Mode** (Standard)
-   - Correctness: 25 points
-   - Confidence: 12 points
-   - Articulation: 8 points
-   - Adaptive bonus: 5 points
-   - **Total: 50 points**
-
-**Scoring Calculation:**
-- LLM evaluates answer on 3 dimensions
-- Automatically assigns points per mode
-- Adaptive: Follow-up questions get harder if student excels
-- Report includes breakdown + strengths/weaknesses
-
-### Viva Schedule Announcement - LOCKED ✅
-- Vivas happen in 4-day period (announced before)
-- Uses normal class timings (8 AM - 4 PM)
-- Lab group specific (most viivas)
-- Shows in timetable with applicable roll numbers
-
-### Annual Exam Preparation - LOCKED ✅
-**Checklist by Subtopic Completion:**
-```
-Cardiology Module:
-  - Anatomy subtopics: [ ] Coronary circulation [ ] Heart chambers [ ] Conduction
-  - Physiology subtopics: [ ] Action potential [ ] Cardiac cycle
-  - Pathology subtopics: [ ] CAD [ ] Arrhythmias
-  
-  - MCQ practice: 75/100 questions solved
-  - Viva practice: 5 sessions completed
-  - Readiness Score: 78%
-```
-
-**Readiness Calculation Formula:**
-During module (ongoing):
-- MCQ accuracy + Subtopic completion = Readiness %
-
-During prof break (special view):
-- **Professional Exam Planner** shows:
-  - Coverage % per module (based on modules completed)
-  - Recommended study order (by weakness)
-  - Exam schedule countdown
-  - Mock exam recommendations
-
-### Payment Withdrawal - LOCKED ✅
-**Marketplace Seller Withdrawals:**
-- Seller has PKR 2500 credits from sales
-- Click "Withdraw" → Opens withdrawal claim
-- **Manual Processing:**
-  - You (Salik/Ammaar) receive claim notification
-  - Verify seller legitimacy
-  - Process via bank transfer
-  - Confirm in app → Credits become withdrawals history
-- **Minimum:** PKR 500
-- **Fees:** 0% (zero fees to students)
-- **Timeline:** 2-5 business days (standard bank transfer)
-
-### Lost & Found Contact - LOCKED ✅
-**Privacy & Trust:**
-- Community is locked (Dow students only)
-- Privacy not a major concern
-- Show full phone number + student name
-- Optional: WhatsApp button for direct message
-- **Trust students** (no verification needed)
-- Auto-archive after 30 days
+| # | Decision | Doc | Status | One-line summary |
+|---|---|---|---|---|
+| 1 | RAG & AI Tutor Architecture | `decisions/rag-architecture.md` | LOCKED | Hybrid pgvector (dense + BM25 + RRF + cross-encoder). Gemini embedding-001 at 768 dims. Parent-document indexing. Google Search grounding on every query. |
+| 2 | Model Selection & Memory | `decisions/model-selection.md` | LOCKED | 3-tier routing: Flash (interactive), DeepSeek R1 (reasoning), Flash-Lite (batch). Structured `student_memory` signal table with weak/strong taxonomy and decay rules. Cost: ~$41/mo at 500 DAU. |
+| 3 | Maps Platform | `decisions/maps-platform.md` | LOCKED | MapLibre GL JS + PMTiles. Two maps: Point (bus routes, priority) + Campus (indoor, gated on floor-plan data). Google Geocoding scoped to place-search only. |
+| 4 | Education Tab | `decisions/education-tab.md` | LOCKED | Cards grid landing. MCQ: module picker → source toggle (Past Papers default). Phase 2 card slots for Saved Qs, Summaries, Flashcards. |
+| 5 | Mobile vs Web UI | `decisions/mobile-web-ui.md` | LOCKED | One component tree, two layout wrappers. 5-item mobile bottom nav. Desktop sidebar with Main / Study / Campus / Identity / System sections. Config-driven via `nav.ts`. |
+| 6 | All-Pages UI Structure | `decisions/ui-page-structure.md` | LOCKED | Every screen wireframed. Dashboard 6 widgets. Full route tree. Prayer Times client-side calc (adhan). Announcements audience-targeted. |
+| 7 | Profile Card + UX Conventions | `decisions/profile-card-ux.md` | LOCKED | Glassmorphic student card (Gold if Pro). Selfie upload with circular crop. App-wide: skeleton-first loading, transition timing scale, focus rings, contrast rules, reduced-motion. |
+| 8 | Voice / STT | `decisions/voice-stt.md` | LOCKED | **Groq Whisper Large v3 Turbo** ($20/mo). + Gemini correction pass for medical terminology. Upgrade path to Deepgram Nova-3 Medical if budget flexes. |
+| 9 | AI Routing & Fallback | `decisions/ai-routing-fallback.md` | LOCKED | Complexity router triggers locked as specced in model-selection.md §3.2. 3-attempt fallback chain for Tier 1, 2-attempt downgrade for Tier 2. Validate hit-rate via production logs. |
+| 10 | Mobile App Delivery | `decisions/mobile-delivery.md` | LOCKED | **Capacitor.js** wrapping Next.js. Android Play Store immediate submission. iOS deferred to Phase 3. PWA rejected (discoverability + push reliability). |
+| 11 | Viva Bot Orchestration | `decisions/viva-bot-orchestration.md` | LOCKED | Hand-rolled **state machine** (4 states: ASK → EVALUATE → FOLLOWUP → SCORE). LangGraph rejected for MVP (overkill for 4 states). Persisted session in Supabase for resilience. |
+| 12 | Viva Bot Scoring | `decisions/viva-scoring.md` | LOCKED | 3 modes (Strict / Friendly / Standard). 50-point scale. Per-dimension weights (correctness 25, confidence 10–15, articulation 7–10, adaptive bonus 3–5). LLM prompt structure and report format specced. |
+| 13 | Dow Credits + Pro Upgrade | `decisions/credits-payment.md` | LOCKED | Top-up via Easypaisa / JazzCash → receipt upload → manual verify (5–10 min). Pro: PKR 3 000 / yr, annual debit from credits balance. Full UX flow specced. |
+| 14 | Dow ID Approval | `decisions/dow-id-approval.md` | LOCKED | Admin queue: approve (instant) or reject (reason picker). Student sees status badge + re-upload CTA on rejection. |
+| 15 | Push Notification Permission | `decisions/push-notifications.md` | LOCKED | Ask on **Day 2 of usage** (not first login). Custom priming card before native OS dialog. Max 2 asks lifetime. Quiet hours 10 PM–6 AM PKT, urgent announcements bypass. |
+| 16 | DowEats Ops | `decisions/doweats-ops.md` | LOCKED | Item-first menu with restaurant tag. 6-digit order code. Gate delivery 12–1:30 PM peak. 15 % commission (transparent in cart). |
+| 17 | Marketplace Ops | `decisions/marketplace-ops.md` | LOCKED | Listings instant (Realtime). 10 % commission. Peer-to-peer handoff. Seller withdrawal: PKR 500 min, 0 % fees, 2–5 days manual bank transfer. Manual dispute arbitration. |
+| 18 | Upload Pipeline | `decisions/upload-pipeline.md` | LOCKED | Vercel Route Handlers + SSE streaming for long jobs. Idempotent enrichment (timestamp columns). Migration path to Supabase EFs when Pro available. |
+| 19 | Analytics & API Cost Logging | `decisions/analytics-logging.md` | LOCKED | `api_usage_log` (tokens, cost, latency) + `app_events` (DAU/MAU). Server-side cost calc from rate table. `/admin/analytics` dashboard Phase 6. Sentry free tier for errors. |
+| 20 | Phase 2 Quick Decisions | (inline — see below) | LOCKED | Sonner toasts · next-themes dark mode (root provider) · minimal 404/error pages · Resend email · two-layer admin auth · Cursor IDE |
 
 ---
 
-## OPERATIONAL DECISIONS
+## ⚠️ Resolved conflicts
 
-### DowEats Peak Hours - LOCKED ✅
-**Timing:**
-- **Lunch:** 12:00 PM - 1:30 PM (peak order window)
-- **Dinner:** College closes at 3:15 PM anyway (lunch is primary)
-- **Off-peak:** Can order anytime, but pickup available 12 PM onwards
-
-**Delivery:**
-- Rider: Your hired delivery person (you know them)
-- **Pickup location:** Dow Medical College gate
-- **During peak hours:** Rider + Ammaar present at gate for handoff
-- **Off-peak:** Rider waits/delivers when gate is open
-- **Student notification:** "Order ready, show code XXXXXX to rider at gate"
-
-### DowEats Menu Structure - LOCKED ✅
-**Organization:**
-- Items displayed with tags showing restaurant source
-- NOT by restaurant first, by ITEM FIRST with restaurant tag
-- Example:
-  ```
-  Biryani (Burns Road)
-  Biryani (Another Cafe)
-  Karahi (Burns Road)
-  ```
-- Categories available as filters: Biryani, Karahi, Burgers, Drinks, Desserts
-
-**Out of Stock:**
-- Remove from menu immediately (not just "unavailable")
-- Update menu daily/as-needed
-
-### Dow Merch Launch - LOCKED ✅
-**All Items Simultaneously (Week 5):**
-- Hoodies
-- Lab coats
-- Notebooks
-- Pens
-- Caps
-- Totebags
-- Laptop sleeves
-- Phone covers
-- Stickers
-- **Annual Varsity Jacket Drop** (special event, separate timing)
-
-**Initial Inventory Quantities:**
-- To be decided with vendors (after app is built)
-- Hybrid model: Popular items stock, special items pre-order
-- 7-day delivery timeline
-
-**Customization:**
-- Batch year embroidery
-- Optional student name on lab coats
-- Varsity jacket: batch year + name
+| Conflict | Resolution |
+|---|---|
+| **Rate limits:** Discovery doc said AI Tutor soft 20 / hard 50 msgs/day. `rag-architecture.md` + CLAUDE.md say soft 2 / hard 4. | **Locked: soft 2 / hard 4.** The 20/50 predates the cost model and was a placeholder. The 2/4 numbers are what the $41/mo cost model is built around. |
+| **Maps:** Discovery doc said Google Maps SDK. | **Superseded.** MapLibre GL JS. See `maps-platform.md`. Discovery doc updated with a note. |
+| **Nav structure:** `5_UXUI_GUIDELINES.md` had old 5-tab nav. | **Updated.** Now shows Dashboard / Education / AI Tutor / Campus / Maps. See the file for the full IA tree. |
 
 ---
 
-## FEATURE SPECIFICATIONS - LOCKED ✅
+## Design system (not a decision — a reference)
 
-### MVP Features (Weeks 1-4)
-1. ✅ Authentication & Onboarding
-2. ✅ Timetable (with viva toggle, lab group tracking)
-3. ✅ Attendance Tracking (with runway calculator)
-4. ✅ AI Tutor Chat (with voice, memory, tutor mode)
-5. ✅ MCQ Solver (unlimited free)
-6. ✅ Viva Bot (3 modes, adaptive scoring, 50-point scale)
-7. ✅ Point Routes Map (static routes MVP)
-8. ✅ Progress Matrix (detailed subtopic breakdown)
-9. ✅ Lost & Found (search-based, no rewards)
-10. ✅ Announcements (real-time push)
+Design tokens, component specs, dark mode, glassmorphism base, typography: all in `docs/4_DESIGN_SYSTEM.md`. Do not duplicate here.
 
-### Phase 2 Features (Weeks 5-10)
-**Week 5 (DowEats):** Complete food delivery system
-**Week 6 (Merch):** All items simultaneously
-**Week 7 (Marketplace):** Textbook + equipment exchange
+UX patterns (error handling, loading states, accessibility checklist): `docs/5_UXUI_GUIDELINES.md`.
 
 ---
 
-## NAMING - LOCKED ✅
+## Rate limits (locked values — use these everywhere)
 
-**Final Name:** DowOS
-- Staying with DowOS
-- Rejected alternatives: "Dow Central"
-- Logo: Text-only "DowOS" in Outfit Bold
-- Future expansion: CampusOS model for other colleges (but Dow-only for now)
-
----
-
-## TECH STACK - CONFIRMED ✅
-
-**Frontend:**
-- Next.js 15 + TypeScript + Tailwind CSS + shadcn/ui
-- Rendering: ISR (timetable 5min) + SSR (attendance) + real-time (announcements)
-- Mobile: Capacitor.js (web + Android instant, iOS later)
-
-**Backend:**
-- Supabase (PostgreSQL + Realtime + Auth + Storage)
-- pgvector (embeddings for AI memory)
-- Next.js API routes
-
-**AI:**
-- Gemini (latest model) - main tutor
-- DeepSeek R1 - fallback complex reasoning
-- OpenAI Whisper - voice recognition ($18/month, Pakistani accent)
-- Google Cloud TTS - text-to-speech ($5-10/month)
-
-**Real-Time:**
-- Supabase WebSocket for announcements, viivas, order tracking
-- Polling for timetable (5min), attendance (30s)
-
-**Payment:**
-- All via Dow Credits (load once via Easypaisa/JazzCash, use throughout app)
-- Manual withdrawal processing for marketplace sellers
-
-**Maps:**
-- Google Maps SDK for Point routes
-
-**Notifications:**
-- Firebase Cloud Messaging (push)
-- Time-sensitive bypasses quiet hours (class in 5 min, admin announcements)
+| Feature | Free soft limit | Free hard limit | Pro limit | Reset |
+|---|---|---|---|---|
+| AI Tutor | 2 msgs / day (+5 s delay on msg 3–4) | 4 msgs / day (blocked) | Unlimited | Daily (midnight PKT) |
+| MCQ Solver | Unlimited | Unlimited | Unlimited | — |
+| Viva Bot | Pro-only | Pro-only | 180 min / month | Monthly |
 
 ---
 
-## REVENUE MODEL - CONFIRMED ✅
+## Revenue model (locked)
 
-**MVP (Weeks 1-4):**
-- Free tier: AI tutor limited (2 soft, 4 hard)
-- Pro tier: PKR 3000/year (unlimited AI, viva bot, analytics)
-- Conservative: 25% conversion = ~500 students
-
-**Phase 2:**
-- DowEats: 15% commission on orders
-- Merch: PKR 300-900 profit per item
-- Marketplace: 10% commission on textbook sales
-- Target Year 1: PKR 2.25M (conservative)
+| Source | Model | Target |
+|---|---|---|
+| Pro subscriptions | PKR 3 000 / yr. 25 % conversion = 500 students. | PKR 150 K / mo |
+| DowEats | 15 % commission on orders | PKR 112 K / mo (M3) |
+| Dow Merch | Direct profit per item | PKR 30 K / mo (M3) |
+| Marketplace | 10 % commission on textbook sales | PKR 15 K / mo (M3) |
+| **Year 1 total** | | **PKR 2.25 M** |
 
 ---
 
-## TIMELINE - CONFIRMED ✅
+## Team structure (locked)
 
-**MVP Build (4 weeks):**
-- Week 1: Setup + core modules (auth, timetable, attendance)
-- Week 2: AI tutor + MCQ solver + voice integration
-- Week 3: Viva bot + progress matrix + announcements
-- Week 4: Testing + beta launch (50 testers, 1 week)
-
-**Phase 2 (Weeks 5-10):**
-- Week 5: DowEats launch
-- Week 6: Merch launch
-- Week 7: Marketplace launch
-
-**Launch Metrics:**
-- Week 4: 500 DAU
-- Week 5-6: 750-1000 DAU
-- Month 2: 1500+ DAU
-- Month 3: 2000 DAU
-
----
-
-## TEAM STRUCTURE - CONFIRMED ✅
-
-**MVP (Weeks 1-4):**
-- Salik: Full-stack development + technical leadership
-- Ammaar: Rider management + cafe partnerships + gate operations
-- Azfar: Content creation (400 subtopics, viva sheets, MCQs)
-
-**Phase 2:**
-- All work collectively
-- Full team restructure in "round 2" (after Phase 2 stabilizes)
-
----
-
-## FINAL CHECKLIST ✅
-
-✅ All 100+ questions answered
-✅ Design locked (colors, fonts, components, dark mode)
-✅ Technical architecture confirmed
-✅ Operational workflows defined
-✅ Business model validated
-✅ Timeline realistic
-✅ Team structure clear
-✅ Success metrics defined
-
-**READY TO BUILD COMPLETE PRD**
-
+| Person | Role |
+|---|---|
+| Salik | Full-stack dev. All code. Technical decisions. |
+| Ammaar | Ops: rider management, cafe partnerships, gate coordination, admin dashboard usage (approvals, withdrawals, menu updates) |
+| Azfar | Content: 400 subtopics, 12 000 MCQs, viva sheets, 25 textbooks upload |

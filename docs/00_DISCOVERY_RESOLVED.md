@@ -35,9 +35,13 @@
 
 ### Maps
 
-* Google Maps JavaScript SDK
-* Custom overlay: Point routes + destinations
-* Phase 2: DMC/CHK floor-specific routing
+⚠️ **Superseded 2026-02-05** by `docs/decisions/maps-platform.md`. Google Maps SDK is no longer used.
+
+* **MapLibre GL JS** + PMTiles (single-file offline tiles, Karachi metro extract from OSM)
+* Two maps with different needs:
+  * **Point map (priority):** 20–30 bus routes. Static routes Phase 5, live GPS tracking Phase 2 addon. Search via scoped Google Geocoding API.
+  * **Campus / CHK map:** Indoor floor plans. Gated on floor-plan data (QGIS digitisation by team). Phase 5 build.
+* Google Geocoding API only for place-search queries on the Point map (~$70 / mo at 2 000 DAU).
 
 ### Rendering Strategy
 

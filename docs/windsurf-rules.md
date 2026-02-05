@@ -1,0 +1,180 @@
+# DowOS — Cursor Rules (source)
+
+**NOTE:** This file is the human-readable source. The live rules file that Cursor reads is `.cursorrules` at the project root — it is already created and up to date. If you edit this file, also update `.cursorrules` to match. Keep under 12 K characters.
+
+---
+
+# DowOS Rules
+
+## ⚡ First thing — read before you build
+
+Before touching any feature, read the relevant decision doc in `docs/decisions/`. Every architectural choice is locked there. Do NOT guess or invent architecture. If a feature has no decision doc and you can't find it in `FINAL_LOCKED_DECISIONS.md`, **stop and flag it** — do not build anything undocumented. Ask the developer first.
+
+Decision docs live at: `docs/decisions/`
+Index of all 17 locked decisions: `docs/FINAL_LOCKED_DECISIONS.md`
+Design system: `docs/4_DESIGN_SYSTEM.md`
+UX patterns + accessibility: `docs/5_UXUI_GUIDELINES.md`
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 15 — App Router only. No Pages Router. |
+| Language | TypeScript strict mode. No `any`. |
+| Styling | Tailwind CSS v4. shadcn/ui primitives. No CSS modules, no emotion, no styled-components. |
+| State | Zustand (global app state). TanStack Query (server cache + refetch). |
+| Backend / DB | Supabase — PostgreSQL + Realtime + Auth + Storage. |
+| AI | Google Gemini (primary). DeepSeek R1 (Tier 2 reasoning fallback). |
+| Mobile | Capacitor.js wrapping the Next.js build. NOT a React Native app. |
+| Icons | Lucide React. 24 px default, 1.5 px stroke, linear style. |
+| Fonts | Outfit Bold (headings). Inter (body). JetBrains Mono (scores, metrics, order codes). |
+| Path alias | `@/*` → `src/*` |
+
+shadcn/ui components already installed: `badge`, `button`, `card`, `input`, `label`, `sheet`, `skeleton`, `tooltip`
+
+---
+
+## 🎨 Design Tokens — use these everywhere
+
+### Colours
+
+| Token | Hex | Usage |
+|---|---|---|
+| Navy (primary) | `#1A2B4C` | Headers, body text, primary elements |
+| Navy-50 | `#F8F9FB` | Light backgrounds |
+| Navy-100 | `#E8EDF5` | Hover backgrounds |
+| Navy-200 | `#D1DCEB` | Borders, dividers |
+| Navy-300 | `#A5B8D6` | Placeholder text (NOT body text — fails contrast) |
+| Navy-400 | `#6B85B3` | Focus borders |
+| Offwhite | `#F5F5F7` | Page backgrounds |
+| Teal | `#00A896` | CTAs, buttons, success, links |
+| Teal-500 | `#008B7D` | Teal hover |
+| Gold | `#D4A574` | Pro/Premium badges, borders |
+| Red | `#E74C3C` | Errors, warnings |
+| Sub-text on glass | `#5A6B8A` | Min-contrast text on glassmorphic cards (passes 4.5:1) |
+
+**Dark mode overrides:**
+| Token | Hex |
+|---|---|
+| BG | `#0F1823` |
+| Card BG | `#222F45` |
+| Teal (dark) | `#00D4C4` |
+| Gold (dark) | `#FFD89B` |
+| Red (dark) | `#FF6B5B` |
+
+### Glassmorphism (the card style used on Profile + featured sections)
+
+```css
+background: rgba(255, 255, 255, 0.8);
+backdrop-filter: blur(10px);
+border: 1px solid rgba(255, 255, 255, 0.3);
+border-radius: 8px;
+box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+/* Dark mode: background rgba(34, 47, 69, 0.85) */
+/* Pro card: border Gold, shadow tinted rgba(212, 165, 116, 0.25) */
+```
+
+### Typography scale
+
+| Role | Font | Weight | Size |
+|---|---|---|---|
+| H1 Page title | Outfit | 800 | 32 px |
+| H2 Section | Outfit | 700 | 24 px |
+| H3 Card header | Outfit | 700 | 18 px |
+| H4 Label | Outfit | 700 | 14 px |
+| Body large | Inter | 400 | 16 px |
+| Body normal | Inter | 400 | 14 px |
+| Body small | Inter | 400 | 12 px |
+| Score / metric | JetBrains Mono | 600 | 14 px |
+| Order code | JetBrains Mono | 700 | 24 px+ |
+
+---
+
+## 📐 Layout & Spacing
+
+- **4 px base unit.** Spacing steps: 4 / 8 / 12 / 16 / 20 / 24 / 32 / 40 / 48.
+- **Mobile-first.** Every component must work on 375 px viewport.
+- **Touch targets:** minimum 44 × 44 px on all interactive elements.
+- **Breakpoints:** Mobile < 768 px · Tablet 768–1023 px · Desktop ≥ 1024 px.
+- **NavShell** switches layout at 1024 px: BottomNav (mobile) ↔ Sidebar (desktop).
+- Cards: 16 px padding, 8 px radius, 12 px margin between.
+- Page padding: 16 px mobile, 24 px desktop top; 40 px desktop sides.
+
+---
+
+## 🧭 Nav Config (locked — do not change without a decision doc update)
+
+### Mobile bottom nav (5 items, 44 px tall, safe-area inset)
+
+```
+1. Dashboard   → /dashboard        icon: Home
+2. Education   → /education        icon: Book
+3. AI Tutor    → /ai               icon: MessageCircle
+4. Campus      → /campus           icon: MapPin
+5. Maps        → /maps             icon: Map
+```
+
+### Desktop sidebar (config-driven via nav.ts)
+
+```
+── Main ──────────────────
+  Dashboard          /dashboard
+  AI Tutor           /ai
+
+── Study ─────────────────
+  MCQ Solver         /education/mcq
+  Viva Bot           /education/viva       [Pro gate] module→subject; Browse Q&A (Free) also here at /education/viva/browse
+  Progress Matrix    /education/progress
+
+── Campus ────────────────
+  Lost & Found       /campus/lost-found
+  Prayer Times       /campus/prayers
+  DowEats            /campus/doweats       [Coming Soon]
+  Dow Merch          /campus/merch         [Coming Soon]
+  Marketplace        /campus/marketplace   [Coming Soon]
+  Maps               /maps
+
+── Identity ──────────────
+  [Avatar mini-card: 48 px circle, Pro ring if active]
+
+── System ────────────────
+  Settings           /settings
+  Profile            /profile
+  Admin              /admin                [role-gated]
+  Help               /help
+```
+
+---
+
+## 📋 Conventions — follow these on every file
+
+1. **`'use client'` only on leaf components** that need hooks (useState, useEffect, event handlers). Layout files and pages are Server Components by default.
+2. **Skeleton-first loading.** Every async page renders `<Skeleton>` shapes while data loads. No full-page spinners. Each widget skeletonises independently.
+3. **Transitions:** 100 ms tap · 150 ms hover · 200 ms route/fade · 250 ms sheet. Only animate `transform` + `opacity` — never width/height.
+4. **Focus rings:** `focus-visible:ring-2 ring-teal-500 ring-offset-2` on every interactive element.
+5. **Reduced motion:** All pulses use `motion-safe:animate-pulse`. Wrap animations in `@media (prefers-reduced-motion: no-preference)`.
+6. **WCAG AA minimum.** Body text contrast ≥ 4.5:1. Never use Navy-300 (`#A5B8D6`) for text on light backgrounds — use `#5A6B8A`.
+7. **Images:** Use `next/image` with explicit `width` + `height`. Add `priority` on above-fold images.
+8. **Secrets:** All API keys in `.env.local` only. Never hardcode.
+9. **Timezone:** `Asia/Karachi` (UTC+5) everywhere. Date display: DD/MM/YYYY unless an API requires ISO.
+10. **Currency:** PKR. All amounts in Pakistani Rupees. 1 Dow Credit = PKR 1.
+11. **Supabase:** RLS on every table. Students read/write own rows only. Admin = service-role. Use `createBrowserClient` / `createServerClient` from `src/lib/supabase.ts`.
+12. **AI rate limits (enforce server-side):** AI Tutor — Free: soft 2 / hard 4 msgs per day. Pro: unlimited. MCQ: unlimited. Viva Bot: Pro-only, 180 min/mo.
+13. **Branch discipline:** Never push to `main`. Feature branch → PR → merge.
+
+---
+
+## 🚨 Stop-and-flag checklist
+
+Before shipping any component, confirm:
+- [ ] Decision doc exists for this feature?  →  If no, **stop. Flag it.**
+- [ ] Touch targets ≥ 44 × 44 px?
+- [ ] Skeleton state implemented?
+- [ ] Dark mode tested?
+- [ ] Focus ring present on all interactive elements?
+- [ ] No hardcoded secrets?
+- [ ] `next/image` used for all images?
+
+---

@@ -84,7 +84,9 @@ team the tools they need to seed data before AI features are built.
 - **`docs/admin-content-upload.md`** — step-by-step guide for Azfar: how to format
   MCQ CSVs, tag questions with module/subject/subtopic/difficulty/high-yield, upload
   textbooks for RAG, create Viva sheets, and monitor ingestion status
-- Supabase migrations: `modules`, `subjects`, `timetable_entries`, `attendance`
+- Supabase migrations: `modules`, `subjects`, `timetable_entries`, `attendance`, `api_usage_log`, `app_events`
+- **Tooling setup (Day 10):** `.cursorrules` at project root (see `docs/cursor-guide.md`). Install + configure Sentry (`@sentry/nextjs`). Create Resend account, add `RESEND_API_KEY` to `.env.local` (use Resend default subdomain until custom domain is live). Write `src/lib/api-logger.ts` + `src/lib/api-rates.ts`.
+- Wire `app_events` logging into: login, logout, Dow ID upload, content upload flows
 
 ---
 
@@ -96,6 +98,7 @@ team has already seeded initial data via admin dashboard.
 - AI Tutor chat: text mode, Gemini streaming, RAG-backed context retrieval (using
   locked architecture from Phase 1), session + long-term memory (pgvector),
   rate-limit UI
+- Wire `api_usage_log` into every AI Tutor + MCQ Solver API call (Gemini, DeepSeek). Cost calculated server-side at log time via `logApiCall()` (see `decisions/analytics-logging.md`).
 - MCQ Solver: module → subject → subtopic drill, AI explanations, practice +
   review modes, high-yield filter
 - Supabase migrations: `chat_sessions`, `chat_messages`, `user_knowledge_base`,
@@ -110,9 +113,8 @@ team has already seeded initial data via admin dashboard.
 
 Complete the learning loop and close the progress-tracking circle.
 
-- Viva Bot: 3 difficulty modes, voice Q&A (using locked STT from Phase 1 →
-  Gemini → TTS), 50-point adaptive scoring, session report. Orchestration approach
-  (LangGraph or state machine) applied per Day 8 decision.
+- Viva Bot: 3 examiner modes (Strict / Friendly / Standard), greeting on session start, voice Q&A (Grosto STT → Gemini → Google Cloud TTS), 50-point adaptive scoring, session report. State-machine orchestration (5 states: GREET → ASK → EVALUATE → FOLLOWUP → SCORE) per Day 8 decision.
+- Wire `api_usage_log` into Viva Bot + STT + TTS calls.
 - Progress Matrix: module/subject/subtopic mastery %, color-coded heatmap,
   annual-exam mode
 - Supabase migrations: `viva_sheets`, `viva_bot_sessions`, `viva_bot_responses`,
@@ -135,30 +137,66 @@ locked in Phase 1 — build straight to the chosen stack.
 
 ---
 
-## Phase 6 – Polish & QA (Mar 11–16, Days 36–41)
+## Phase 6 – Polish & QA (Mar 11–13, Days 36–38)
 
-Harden everything before real users touch it.
+Compressed to 3 days so beta can hit Mar 14.  Critical-path items only; deferrable
+work moves to Phase 8.
 
+**Must-do before beta:**
 - Full mobile-first QA pass (375 px viewport, touch targets, keyboard types)
-- WCAG AA contrast audit across all screens
-- Error-state + loading-state review (toasts, skeletons, network-error banners)
 - Pro tier paywall enforcement (Viva Bot gating, AI Tutor limit enforcement)
-- Performance: Lighthouse run, image optimisation, bundle size check
-- Bulk-seed remaining MCQ content via admin dashboard (target 800+ questions)
-- Mobile delivery build: package app per Day 7 decision (Capacitor or PWA), test
-  install flow and push notifications on real Android device
-- Final review of `docs/admin-content-upload.md` — confirm it reflects actual
-  upload flow
+- Error-state + loading-state review (toasts, skeletons, network-error banners)
+- Performance: Lighthouse run, bundle size check
+- Mobile delivery build: package via Capacitor, test install + push on real Android
+
+**Deferred to Phase 8 (pre-full-launch):**
+- WCAG AA contrast audit — iterate during beta feedback window
+- Build `/admin/analytics` dashboard (see `decisions/analytics-logging.md`)
+- Bulk-seed remaining MCQ content (target 800+ questions)
+- Final review of `docs/admin-content-upload.md`
 
 ---
 
-## Phase 7 – Soft Launch (Mar 17–20, Days 42–45)
+## Phase 7 – Beta Launch (Mar 14, Day 39)
 
-Get real Dow students using it.
+First real users.  Marketing goes live.  See `docs/marketing-launch.md` for the
+full plan (Instagram Reel script, WhatsApp blast, teaser sequence).
 
-- Deploy to Vercel production (or equivalent) with production env vars
+- Deploy to Vercel production with production env vars
 - Onboard first 20–50 beta testers from Batch 1
 - Dow ID approval workflow live (manual review queue)
+- Instagram beta-launch Reel goes live (pain-point hook + product reveal)
+- WhatsApp blast to Dow student groups
 - Monitor: error rates, API latency, Supabase usage, daily active users
-- Collect feedback, triage bugs, patch critical issues same-day
+
+---
+
+## Phase 8 – Beta Feedback & Iteration (Mar 15–27, Days 40–52)
+
+Two weeks to learn, fix, and polish before opening to everyone.
+
+- Triage bugs daily — patch critical issues same-day
+- Iterate on UX based on beta feedback (focus on Education + AI Tutor — the
+  non-negotiables)
+- Complete deferred Phase 6 items: WCAG audit, `/admin/analytics` dashboard,
+  MCQ content seeding (800+ questions)
+- Collect beta assets for full launch: student quotes, usage stats, screen
+  recordings (see `docs/marketing-launch.md` §7)
+- Instagram teaser Stories: beta progress, feature peeks
+- LinkedIn draft prep: write the founder + vision + B2B post
 - Internal retrospective + Phase 2 (DowEats / Merch / Marketplace) planning kickoff
+
+---
+
+## Phase 9 – Full Launch (Mar 28, Day 53)
+
+Open to every Dow student.  Maximum visibility.  See `docs/marketing-launch.md`
+for scripts and post outlines.
+
+- Open self-serve signups to all Dow students
+- Instagram full-launch Reel (beta proof + feature tour)
+- LinkedIn post: founder story + ed-tech Pakistan vision + B2B university pitch
+- WhatsApp blast to all Dow student groups
+- Engage every comment and reply on launch day
+- Monitor at scale: error rates, DAU, API costs, Pro conversion
+- Collect feedback, triage bugs, patch critical issues same-day

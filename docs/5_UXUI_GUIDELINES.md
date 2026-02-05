@@ -88,62 +88,56 @@ Spacing follows same scale
 
 ### Site Structure (IA)
 
+⚠️ **Updated 2026-02-05** to match the locked route tree in `docs/decisions/ui-page-structure.md` §11. The old structure (Timetable / Attendance / Learning Hub / Community / Account) has been superseded.
+
 ```
 DowOS App
-├── Auth (Entry point)
-│   ├── Signup/Login
-│   ├── ID Verification
-│   └── Profile Setup
+├── (auth)/                          ← unauthenticated
+│   ├── login/
+│   ├── signup/
+│   └── verify/
 │
-├── Dashboard (Home)
-│   ├── Quick Actions
-│   ├── Announcements
-│   └── Profile Summary
-│
-├── Timetable (Schedule)
-│   ├── Week View
-│   ├── Module View
-│   └── Viva Schedule
-│
-├── Attendance
-│   ├── Check-in Button
-│   ├── Per-Module Stats
-│   └── Runway Calculator
-│
-├── Learning Hub
-│   ├── AI Tutor Chat
-│   ├── MCQ Solver
-│   ├── Viva Bot
-│   └── Progress Matrix
-│
-├── Community
-│   ├── Lost & Found
-│   ├── Point Routes
-│   └── Announcements
-│
-├── Phase 2 (Weeks 5+)
-│   ├── DowEats
-│   ├── Merch Store
-│   └── Marketplace
-│
-└── Account
-    ├── Profile
-    ├── Settings
-    ├── Notifications
-    └── Help & Support
+└── (app)/                           ← authenticated (guarded by middleware)
+    ├── dashboard/                   ← HOME. 6-widget stack + time-aware greeting
+    │   └── timetable/               ← timetable sub-page (week view + viva toggle)
+    │
+    ├── education/                   ← cards grid landing
+    │   ├── mcq/                     ← MCQ Solver (module picker → source toggle)
+    │   ├── viva/                    ← Viva Bot (Pro-gated, 3 modes)
+    │   └── progress/                ← Progress Matrix
+    │
+    ├── ai/                          ← AI Tutor Chat (own top-level nav item)
+    │
+    ├── campus/                      ← cards grid: L&F, Prayers, revenue features
+    │   ├── lost-found/
+    │   ├── prayers/
+    │   ├── doweats/                 ← Phase 2
+    │   ├── merch/                   ← Phase 2
+    │   └── marketplace/             ← Phase 2
+    │
+    ├── maps/                        ← Point / Campus tab switcher
+    │
+    ├── profile/                     ← glassmorphic student card + photo upload
+    ├── settings/
+    ├── admin/                       ← role-gated (service-role middleware)
+    └── help/
 ```
 
 ### Navigation Hierarchy
 
-**Level 1: Main Sections**
+⚠️ **Updated 2026-02-05.** See `docs/decisions/mobile-web-ui.md` for the full config-driven nav spec.
+
+**Level 1: Main Sections (mobile bottom nav — 5 items)**
 ```
 Bottom navigation tabs (mobile)
-- Timetable
-- Attendance
-- Learning
-- Community
-- More/Account
+- Dashboard   (home icon)
+- Education   (book icon)
+- AI Tutor    (spark icon)
+- Campus      (building icon)
+- Maps        (map-pin icon)
 ```
+
+**Desktop sidebar** expands these into grouped sections: Main, Study, Campus, Identity (avatar mini-card), System. See `mobile-web-ui.md` for full sidebar wireframe.
 
 **Level 2: Subsections**
 ```
