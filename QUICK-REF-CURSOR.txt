@@ -1,0 +1,171 @@
+═══════════════════════════════════════════════════════════════════════════════════
+                        CURSOR PRO QUICK REFERENCE CARD
+                            Phase 2 Build Sprint (Days 10-16)
+═══════════════════════════════════════════════════════════════════════════════════
+
+BEFORE EVERY BUILD SESSION (10 MIN CHECKLIST)
+───────────────────────────────────────────────────────────────────────────────────
+□ Read the decision doc for the feature (e.g., mobile-web-ui.md)
+□ Identify files Cursor will touch (3–5 files)
+□ Gather @-mention tags: decision doc + patterns + types
+□ Open Cursor Pro → File → Open Folder → E:\dowos
+□ Ctrl+Shift+I to open Composer
+□ Select model: Sonnet (default) or Opus (complex features)
+
+EVERY PROMPT NEEDS THREE LAYERS OF CONTEXT
+───────────────────────────────────────────────────────────────────────────────────
+Layer 1: DECISION DOC
+   @docs/decisions/[feature].md
+
+Layer 2: EXISTING PATTERNS
+   @src/components/ui/        (shadcn primitives)
+   @src/lib/supabase.ts       (data fetching)
+   @src/types/database.ts     (TypeScript shapes)
+
+Layer 3: SPECIFIC FILES
+   @.cursorrules              (design tokens, nav config)
+   [Any relevant existing component]
+
+OPTIMAL PROMPT STRUCTURE
+───────────────────────────────────────────────────────────────────────────────────
+Build [WHAT] in [WHERE].
+
+Context:
+- Spec: @docs/decisions/[feature].md
+- Patterns: @src/components/ui/ @src/lib/
+- Types: @src/types/database.ts
+
+Technical requirements:
+- [Specific tech: use TanStack Query, server component, etc.]
+- [Dark mode: include dark: classes]
+- [Auth: fetch user from session]
+- [Cost tracking: logApiCall() after API calls]
+
+Details from spec:
+- [Copy 2–3 bullets from decision doc]
+
+Files to create/modify:
+- [List 3–5 file paths]
+
+Do NOT:
+- [2–3 things Cursor commonly gets wrong for this task]
+
+MODEL SELECTION FLOWCHART
+───────────────────────────────────────────────────────────────────────────────────
+Is it RAG, Viva Bot, RLS, 5+ files, or "high cost of error"?
+  YES  → Use OPUS
+  NO   → Is it a single component or simple UI?
+         YES  → Use SONNET
+         NO   → Use SONNET (can fix after)
+
+After Sonnet gets stuck (2nd error cycle) → Switch to OPUS
+  In Composer: type @model=opus at start of prompt
+  After fix: type @model=sonnet to return to fast mode
+
+AFTER EVERY BUILD
+───────────────────────────────────────────────────────────────────────────────────
+□ Review diffs file-by-file (don't accept all blindly)
+  ✓ dark: classes on all styled elements?
+  ✓ logApiCall() after Gemini/Groq/TTS calls?
+  ✓ 44px touch targets?
+  ✓ @/ imports (not ../../../)?
+  ✓ No new npm install commands?
+□ Accept each file
+□ Run: npm run build
+□ Errors? Copy exact output → paste into Composer → "Fix this error"
+
+KEYBOARD SHORTCUTS
+───────────────────────────────────────────────────────────────────────────────────
+Ctrl+Shift+I       Open Composer (PRIMARY — use this 90% of time)
+Ctrl+K             Open Chat (single-file edits)
+Ctrl+Shift+L       Search codebase
+Ctrl+P             Quick-open file
+Ctrl+` (backtick)  Toggle terminal
+Tab                Accept suggestion
+Esc                Dismiss
+Ctrl+Z             Undo (works in diffs)
+
+CRITICAL FILES TO KEEP NEARBY
+───────────────────────────────────────────────────────────────────────────────────
+During ANY build:
+  • .cursorrules                  (design tokens, conventions)
+  • docs/decisions/[feature].md   (feature spec + wireframe)
+
+During NAV/LAYOUT builds:
+  • docs/decisions/mobile-web-ui.md (nav structure)
+  • docs/decisions/ui-page-structure.md (all pages)
+
+During AI builds:
+  • docs/decisions/rag-architecture.md (RAG pipeline)
+  • docs/decisions/viva-bot-orchestration.md (Viva Bot)
+
+During ADMIN builds:
+  • docs/decisions/dow-id-approval.md (ID approval flow)
+
+COST TRACKING REMINDER
+───────────────────────────────────────────────────────────────────────────────────
+If your code calls Gemini, Groq, or Google:
+
+import { logApiCall } from "@/lib/api-logger"
+
+// After API call:
+logApiCall("gemini", "mcq-solver", cost, tokens)
+logApiCall("groq", "viva-bot-stt", cost, tokens)
+
+This is CONVENTION #16 in .cursorrules. Cursor may forget it — YOU verify.
+
+TROUBLESHOOTING QUICK FIXES
+───────────────────────────────────────────────────────────────────────────────────
+Problem: "Cannot find module @/components/..."
+→ File wasn't created. Re-prompt Cursor to create it.
+
+Problem: Dark mode classes missing
+→ Check diff: does component have dark: on styled elements?
+→ If not: reject file, re-prompt "Add dark: variants"
+
+Problem: Build fails: "Cannot find name 'User'"
+→ Cursor forgot to import types. Reject, re-prompt: "Import User from..."
+
+Problem: Cursor starts building wrong thing
+→ DON'T steer mid-conversation
+→ Close Composer, start fresh with tighter prompt
+
+Problem: Cursor hits token limit (response cuts off)
+→ Switch @model=opus for that one turn
+→ After fix, type @model=sonnet to return
+
+ESCALATION PATH
+───────────────────────────────────────────────────────────────────────────────────
+Stuck after 1 Sonnet cycle    → Try once more with @model=opus in same Composer
+Stuck after 2 Sonnet cycles   → Close Composer, start fresh OR hand to Claude Code
+Build error persists after fix → Hand to Claude Code Opus (cross-file debugging)
+Ambiguous architecture issue   → Hand to Claude Code Opus
+Session handoff + next plan    → Hand to Claude Code Sonnet
+
+DAILY QUOTA (TO NOT OVERSPEND)
+───────────────────────────────────────────────────────────────────────────────────
+Total Cursor + Claude Code interactions: ~30–50/day
+Opus: ~10–15/day (reserve for high-cost-of-error)
+Sonnet: ~20–35/day (everything else)
+
+If hitting limits:
+  → Batch related work (one Opus prompt = 2 features)
+  → Use Sonnet for simpler tasks (UI, stubs, fixes)
+  → Hand off code review to Claude Code (preserves Cursor budget)
+
+READY TO BUILD?
+───────────────────────────────────────────────────────────────────────────────────
+□ Cursor Pro open
+□ Repo at E:\dowos
+□ .env.local exists with Supabase keys
+□ .cursorrules at repo root
+□ Decision doc read
+□ @-mention tags prepared
+□ Model selected (Sonnet for Day 10)
+
+GO. Ctrl+Shift+I. Build.
+
+═══════════════════════════════════════════════════════════════════════════════════
+For full guides: see docs/cursor-guide.md, docs/cursor-pro-strategy.md,
+                 docs/model-usage-guide.md, docs/DAY-10-CURSOR-STARTER.md
+═══════════════════════════════════════════════════════════════════════════════════
