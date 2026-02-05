@@ -173,7 +173,7 @@ CREATE POLICY "No student delete to app_events"
 **Tables:** `years`, `modules`, `subjects`, `module_subjects` (junction), `subtopics`
 **Seed Data:**
 - 5 years (Y1-Y5)
-- 25 modules total (Y1: 5, Y2: 6, Y3: 8, Y4: 6, Y5: 4 systems)
+- 26 modules total (Y1: 5, Y2: 6, Y3: 8, Y4: 7, Y5: 4 systems)
 - 28 subjects (14 preclinical for Y1-Y2, 14+ clinical for Y3-Y5)
 - Module-to-subject mappings: To be added later (empty now for flexibility)
 - Subtopics: Empty now - will be seeded when detailed topic mappings are provided
@@ -286,9 +286,10 @@ CROSS JOIN (
     ('Musculoskeletal System/Orthopedic', 'ORT2', 'Orthopedic clinical practice', 1),
     ('Reproductive System', 'REP2', 'Reproductive clinical management', 2),
     ('Neurosciences', 'NEU2', 'Advanced neuroscience', 3),
-    ('Clinical Genetics + Dermatology/Plastic Surgery/Burns', 'GEN_DPS', 'Genetic disorders and dermatological procedures', 4),
-    ('Otorhinolaryngology/ENT', 'ENT2', 'Ear, Nose, Throat clinical', 5),
-    ('Ophthalmology', 'EYE', 'Eye disorders and management', 6)
+    ('Clinical Genetics', 'GEN', 'Genetic disorders and counseling', 4),
+    ('Dermatology/Plastic Surgery/Burns', 'DPS', 'Dermatological and plastic procedures', 5),
+    ('Otorhinolaryngology/ENT', 'ENT2', 'Ear, Nose, Throat clinical', 6),
+    ('Ophthalmology', 'EYE', 'Eye disorders and management', 7)
 ) AS m(name, code, description, order_index)
 WHERE y.code = 'Y4'
 AND NOT EXISTS (
@@ -509,7 +510,7 @@ After applying all 3 migrations in Supabase, verify:
 
 **Migration 3 (curriculum structure):**
 - [ ] `years` table has 5 rows (Y1-Y5)
-- [ ] `modules` table has 25 rows (5 + 6 + 8 + 6 + 4 per year)
+- [ ] `modules` table has 26 rows (5 + 6 + 8 + 7 + 4 per year)
 - [ ] `subjects` table has 28 rows (14 preclinical + 14 clinical)
 - [ ] `module_subjects` table exists (empty now - to be populated later)
 - [ ] `subtopics` table exists (empty - for future seeding)
