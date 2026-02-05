@@ -137,31 +137,66 @@ locked in Phase 1 — build straight to the chosen stack.
 
 ---
 
-## Phase 6 – Polish & QA (Mar 11–16, Days 36–41)
+## Phase 6 – Polish & QA (Mar 11–13, Days 36–38)
 
-Harden everything before real users touch it.
+Compressed to 3 days so beta can hit Mar 14.  Critical-path items only; deferrable
+work moves to Phase 8.
 
+**Must-do before beta:**
 - Full mobile-first QA pass (375 px viewport, touch targets, keyboard types)
-- WCAG AA contrast audit across all screens
-- Error-state + loading-state review (toasts, skeletons, network-error banners)
 - Pro tier paywall enforcement (Viva Bot gating, AI Tutor limit enforcement)
-- Performance: Lighthouse run, image optimisation, bundle size check
-- Build `/admin/analytics` dashboard (see `decisions/analytics-logging.md`): DAU / MAU, API cost breakdown by provider, feature usage, cost-per-user, raw log table
-- Bulk-seed remaining MCQ content via admin dashboard (target 800+ questions)
-- Mobile delivery build: package app per Day 7 decision (Capacitor or PWA), test
-  install flow and push notifications on real Android device
-- Final review of `docs/admin-content-upload.md` — confirm it reflects actual
-  upload flow
+- Error-state + loading-state review (toasts, skeletons, network-error banners)
+- Performance: Lighthouse run, bundle size check
+- Mobile delivery build: package via Capacitor, test install + push on real Android
+
+**Deferred to Phase 8 (pre-full-launch):**
+- WCAG AA contrast audit — iterate during beta feedback window
+- Build `/admin/analytics` dashboard (see `decisions/analytics-logging.md`)
+- Bulk-seed remaining MCQ content (target 800+ questions)
+- Final review of `docs/admin-content-upload.md`
 
 ---
 
-## Phase 7 – Soft Launch (Mar 17–20, Days 42–45)
+## Phase 7 – Beta Launch (Mar 14, Day 39)
 
-Get real Dow students using it.
+First real users.  Marketing goes live.  See `docs/marketing-launch.md` for the
+full plan (Instagram Reel script, WhatsApp blast, teaser sequence).
 
-- Deploy to Vercel production (or equivalent) with production env vars
+- Deploy to Vercel production with production env vars
 - Onboard first 20–50 beta testers from Batch 1
 - Dow ID approval workflow live (manual review queue)
+- Instagram beta-launch Reel goes live (pain-point hook + product reveal)
+- WhatsApp blast to Dow student groups
 - Monitor: error rates, API latency, Supabase usage, daily active users
-- Collect feedback, triage bugs, patch critical issues same-day
+
+---
+
+## Phase 8 – Beta Feedback & Iteration (Mar 15–27, Days 40–52)
+
+Two weeks to learn, fix, and polish before opening to everyone.
+
+- Triage bugs daily — patch critical issues same-day
+- Iterate on UX based on beta feedback (focus on Education + AI Tutor — the
+  non-negotiables)
+- Complete deferred Phase 6 items: WCAG audit, `/admin/analytics` dashboard,
+  MCQ content seeding (800+ questions)
+- Collect beta assets for full launch: student quotes, usage stats, screen
+  recordings (see `docs/marketing-launch.md` §7)
+- Instagram teaser Stories: beta progress, feature peeks
+- LinkedIn draft prep: write the founder + vision + B2B post
 - Internal retrospective + Phase 2 (DowEats / Merch / Marketplace) planning kickoff
+
+---
+
+## Phase 9 – Full Launch (Mar 28, Day 53)
+
+Open to every Dow student.  Maximum visibility.  See `docs/marketing-launch.md`
+for scripts and post outlines.
+
+- Open self-serve signups to all Dow students
+- Instagram full-launch Reel (beta proof + feature tour)
+- LinkedIn post: founder story + ed-tech Pakistan vision + B2B university pitch
+- WhatsApp blast to all Dow student groups
+- Engage every comment and reply on launch day
+- Monitor at scale: error rates, DAU, API costs, Pro conversion
+- Collect feedback, triage bugs, patch critical issues same-day
