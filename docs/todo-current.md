@@ -22,11 +22,11 @@ Tick items off as you go. Update or re-create this file when the list drains.
 ### Architecture Decision Days (Days 3–9) — remaining tech decisions
 - [x] **Day 3 – RAG + Models:** `docs/decisions/rag-architecture.md` + `docs/decisions/model-selection.md` LOCKED. Three-tier model routing (Flash / DeepSeek R1 / Flash-Lite). Hybrid pgvector retrieval. Student memory signal system. Pro personalisation layer (study plans, readiness scores, Socratic mode). Cost: ~$41/mo at 500 DAU.
 - [x] **Day 4 – Maps:** `docs/decisions/maps-platform.md` LOCKED. MapLibre GL JS + PMTiles. Two maps: Point (bus, priority) + Campus (indoor, gated on floor-plan data). Google Geocoding scoped to place-search only. Campus MVP spec includes QGIS digitisation workflow + 3-table Supabase schema.
-- [ ] **Day 5 – Voice/STT:** Test Pakistani-accent accuracy on Web Speech API vs OpenAI Whisper vs Google Cloud STT. Write `docs/decisions/voice-stt.md`
-- [ ] **Day 6 – AI routing:** Benchmark Gemini vs DeepSeek R1 on 20 med questions. Complexity router triggers already specced in `model-selection.md` §3.2 — this day validates them empirically. Write `docs/decisions/ai-routing-fallback.md`
-- [ ] **Day 7 – Mobile delivery:** Capacitor vs PWA. Discovery doc already leans Capacitor — this day stress-tests that with Play Store discoverability + push reliability on Android. Write `docs/decisions/mobile-delivery.md`
-- [ ] **Day 8 – Viva orchestration:** LangGraph vs hand-rolled state machine for the Q → eval → follow-up → score loop. Write `docs/decisions/viva-bot-orchestration.md`
-- [ ] **Day 9 – Sign-off:** Cross-check all decision docs for internal consistency (especially the rate-limit conflict — see ⚠️ below). Update `docs/FINAL_LOCKED_DECISIONS.md` with the new decision set.
+- [x] **Day 5 – Voice/STT:** Deep research on 7 STT providers. Groq Whisper Large v3 Turbo locked ($20/mo). Gemini correction pass for medical terms. Upgrade path to Deepgram Nova-3 Medical documented. `docs/decisions/voice-stt.md` LOCKED.
+- [x] **Day 6 – AI routing:** Complexity router triggers locked as-is (validate via production logs post-beta). 3-attempt fallback chain for Tier 1, 2-attempt downgrade for Tier 2. `docs/decisions/ai-routing-fallback.md` LOCKED.
+- [x] **Day 7 – Mobile delivery:** Capacitor locked. PWA rejected (discoverability + iOS Safari push). Android Play Store immediate, iOS Phase 3. `docs/decisions/mobile-delivery.md` LOCKED.
+- [x] **Day 8 – Viva orchestration:** State machine locked (4 states). LangGraph rejected (overkill). Persisted session in Supabase. Adaptive difficulty 1–5. `docs/decisions/viva-bot-orchestration.md` LOCKED.
+- [x] **Day 9 – Sign-off:** All conflicts resolved. Rate limits locked at 2/4. `FINAL_LOCKED_DECISIONS.md` rewritten as 17-decision index. All stale docs updated.
 
 ### UI & Product Decisions (Days 4–5, extended) ✓ DONE
 - [x] **Education tab structure:** Cards grid, MCQ module-picker → source toggle, Phase 2 slots. `docs/decisions/education-tab.md` LOCKED.
@@ -35,18 +35,18 @@ Tick items off as you go. Update or re-create this file when the list drains.
 - [x] **Profile card + UX conventions:** Glassmorphic student card (Gold if Pro, selfie upload, module + credits), sidebar avatar mini-card, time-aware greeting, skeleton-first loading, transition scale, touch targets, focus rings, contrast rules, reduced-motion. `docs/decisions/profile-card-ux.md` LOCKED.
 
 ### Product & Operational Decisions (new — added from audit)
-- [ ] **Dow Credits top-up + Pro upgrade flow:** Discovery already locked the top-up mechanism (Easypaisa / JazzCash → manual 5–10 min verification). This decision doc formalises: the upgrade CTA flow from the Profile card, what the payment confirmation screen looks like, and how credits debit for Pro (annual, one-time). Write `docs/decisions/credits-payment.md`
-- [ ] **Dow ID approval workflow:** Admin sees a queue of pending uploads. Approve → student status flips to green. Reject → student gets re-upload CTA (red status). What fields does the admin see? What's the rejection reason picker? Ships with Phase 2 admin dashboard (Day 12–13). Write `docs/decisions/dow-id-approval.md`
-- [ ] **Push notification permission strategy:** FCM is in the stack. iOS + Android both require explicit opt-in. Decision: when do we ask? (Options: first login after onboarding, first time an announcement fires, a dedicated "stay in the loop?" card on Day 2 of usage.) Wrong timing = permanent deny. Write `docs/decisions/push-notifications.md`
-- [ ] **DowEats operational spec:** Menu structure (item-first + restaurant tag), 6-digit order code flow, gate delivery handoff, peak hours (12–1:30 PM). Already decided in `FINAL_LOCKED_DECISIONS.md` — needs a proper decision doc for Windsurf to build from. Write `docs/decisions/doweats-ops.md`
-- [ ] **Marketplace seller withdrawal spec:** Manual withdrawal (PKR 500 min, 0% fees, 2–5 business days bank transfer). Already decided — formalise into `docs/decisions/marketplace-ops.md`
-- [ ] **Viva Bot scoring spec:** 3 modes (Strict / Friendly / Standard), 50-point scale with per-dimension weights already locked in `FINAL_LOCKED_DECISIONS.md`. Formalise into `docs/decisions/viva-scoring.md` so Windsurf can build the scoring engine directly from it.
+- [x] **Dow Credits + Pro upgrade flow:** Full UX flow specced. `docs/decisions/credits-payment.md` LOCKED.
+- [x] **Dow ID approval workflow:** Admin queue + reject reason picker. `docs/decisions/dow-id-approval.md` LOCKED.
+- [x] **Push notification permission strategy:** Day 2 ask, priming card, max 2 asks. `docs/decisions/push-notifications.md` LOCKED.
+- [x] **DowEats operational spec:** Item-first menu, 6-digit code, gate delivery. `docs/decisions/doweats-ops.md` LOCKED.
+- [x] **Marketplace ops:** Withdrawal + disputes specced. `docs/decisions/marketplace-ops.md` LOCKED.
+- [x] **Viva Bot scoring:** 3-mode weights + LLM prompt + report format. `docs/decisions/viva-scoring.md` LOCKED.
 
-### Stale docs to reconcile before coding starts ⚠️
-- [ ] **Rate limit conflict:** `FINAL_LOCKED_DECISIONS.md` says AI Tutor soft 20 / hard 50 msgs/day. `rag-architecture.md` says soft 2 / hard 4. CLAUDE.md says soft 2 / hard 4. → Resolve on Day 9 sign-off. Almost certainly 2/4 is correct (the 20/50 predates the cost model).
-- [ ] **`5_UXUI_GUIDELINES.md` nav is stale:** Still shows Timetable / Attendance / Learning / Community / Account as the 5 tabs. Must update to Dashboard / Education / AI Tutor / Campus / Maps before coding starts. Also update the IA tree in §2 to match the route tree in `ui-page-structure.md` §11.
-- [ ] **`00_DISCOVERY_RESOLVED.md` maps section stale:** Says "Google Maps SDK". Superseded by MapLibre decision. Update the maps block to reflect the locked architecture.
-- [ ] **`FINAL_LOCKED_DECISIONS.md` is a flat legacy doc:** Once all new decision docs are written (Days 5–9 + product decisions), rewrite this file as a concise index that points to each decision doc with a one-line status. It should be the single source of truth for "what's locked, where's the detail."
+### Stale docs to reconcile before coding starts ✓ DONE
+- [x] **Rate limit conflict:** Locked at soft 2 / hard 4. The 20/50 was a pre-cost-model placeholder. Resolved in `FINAL_LOCKED_DECISIONS.md` §Resolved conflicts.
+- [x] **`5_UXUI_GUIDELINES.md` nav updated:** IA tree and nav hierarchy now match the locked route tree (Dashboard / Education / AI Tutor / Campus / Maps).
+- [x] **`00_DISCOVERY_RESOLVED.md` maps updated:** Maps block now reflects MapLibre GL JS + PMTiles. Superseded note added.
+- [x] **`FINAL_LOCKED_DECISIONS.md` rewritten:** Clean 17-decision index. Each row points to its decision doc with a one-line summary. Resolved conflicts table included.
 
 ---
 
@@ -79,7 +79,7 @@ Tick items off as you go. Update or re-create this file when the list drains.
 - [ ] Build textbook/PDF upload page (triggers chunking + embedding pipeline)
 - [ ] Build content-list view: list / edit / delete / archive per module
 - [ ] Add upload-status indicators (processing / ready / errored)
-- [ ] Write `docs/admin-content-upload.md` — the guide Azfar will actually use
+- [x] Write `docs/admin-content-upload.md` — the guide Azfar will actually use ✓ DONE
 
 ### Parallel workstream: Content prep (kickoff Day 10, runs through Day 23)
 - [ ] Send admin email requesting CAD/PDF floor plans for Dow main building (campus map digitisation dependency)
@@ -88,20 +88,20 @@ Tick items off as you go. Update or re-create this file when the list drains.
 
 ---
 
-## Windsurf Handoff — docs to create before coding starts
+## Windsurf Handoff — docs ✓ ALL DONE
 
-These docs don't exist yet. Windsurf needs them to build without ambiguity. Create before Day 10.
+All 8 docs written. Windsurf / Cascade is ready to build from Day 10.
 
-| Doc | What it covers | When to write |
-|---|---|---|
-| `docs/windsurf-rules.md` | The `.windsurf/rules` file content — always-on context for Cascade. Stack, tokens, fonts, icons, conventions. | Day 9 (sign-off day) |
-| `docs/decisions/credits-payment.md` | Top-up flow, Pro upgrade CTA, payment confirmation screen | Day 5–6 |
-| `docs/decisions/dow-id-approval.md` | Admin approval queue UI, reject-reason picker | Day 6–7 |
-| `docs/decisions/push-notifications.md` | Permission ask timing + strategy | Day 7 |
-| `docs/decisions/doweats-ops.md` | Menu structure, order code flow, gate handoff | Day 7–8 |
-| `docs/decisions/marketplace-ops.md` | Seller withdrawal flow, dispute arbitration | Day 8 |
-| `docs/decisions/viva-scoring.md` | 3-mode scoring weights, report structure | Day 8 |
-| `docs/admin-content-upload.md` | Azfar's step-by-step guide (MCQ CSV format, textbook upload, viva sheet format) | Day 10 (first thing) |
+| Doc | Status |
+|---|---|
+| `docs/windsurf-rules.md` | ✓ Written — copy the marked block into `.windsurf/rules` before first coding session |
+| `docs/decisions/credits-payment.md` | ✓ LOCKED |
+| `docs/decisions/dow-id-approval.md` | ✓ LOCKED |
+| `docs/decisions/push-notifications.md` | ✓ LOCKED |
+| `docs/decisions/doweats-ops.md` | ✓ LOCKED |
+| `docs/decisions/marketplace-ops.md` | ✓ LOCKED |
+| `docs/decisions/viva-scoring.md` | ✓ LOCKED |
+| `docs/admin-content-upload.md` | ✓ Written — hand to Azfar before Day 10 |
 
 ---
 
