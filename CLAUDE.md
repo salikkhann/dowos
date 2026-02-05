@@ -1,6 +1,6 @@
 # CLAUDE.md – DowOS Project Guide
 
-Last updated: 2026-02-04
+Last updated: 2026-02-05 (Session 5 — stack + folder corrections)
 
 ---
 
@@ -41,7 +41,7 @@ All in-app payments use **Dow Credits** (manual top-up, verified in 5–10 min).
 11. **Always update the session doc.** At the end of every session (or when switching context), update `docs/sessions/` with what was done, what state the project is in, and what comes next. This is mandatory — never skip it.
 12. **Never read `docs/02_DATABASE_SCHEMA.md` in full at session start.** It is 925 lines. Query the live schema via the Supabase MCP server, or read only the specific table block you need. Same rule for any doc over 200 lines — read surgically, not wholesale.
 13. **Compact manually at task boundaries.** Use `/compact` after finishing a feature or resolving a debug session. Never let auto-compaction fire mid-task — it loses the artifact trail (which files were touched and what state they're in).
-14. **Model discipline.** Use Sonnet for all day-to-day coding. Switch to Opus only for the 6 architecture decision days (Days 3–8 in the roadmap) where deep tradeoff reasoning is needed. Opus is 5× slower — do not use it for routine writes.
+14. **Model discipline.** Use Sonnet for all coding. Days 3–8 architecture decisions are done and locked — Opus is not needed for the build phases ahead.
 
 ---
 
@@ -55,9 +55,9 @@ All in-app payments use **Dow Credits** (manual top-up, verified in 5–10 min).
 | State | Zustand (global), TanStack Query (server cache) |
 | Backend / DB | Supabase – PostgreSQL + Realtime + Auth |
 | AI | Google Gemini (primary), DeepSeek R1 (fallback) |
-| Speech | OpenAI Whisper (STT, Pakistani-accent tuned), Google Cloud TTS |
+| Speech | Groq Whisper Large v3 Turbo (STT), Google Cloud TTS |
 | Push notifications | Firebase Cloud Messaging |
-| Maps | Google Maps JS SDK (campus routes) |
+| Maps | MapLibre GL JS + PMTiles (campus routes) |
 | Icons | Lucide React (24 px, 1.5 px stroke, linear) |
 | Fonts | Outfit Bold (headings), Inter (body), JetBrains Mono (metrics) |
 
@@ -90,10 +90,13 @@ src/
 │   │   │   ├── mcq/      # MCQ Solver
 │   │   │   ├── viva/     # Viva Bot
 │   │   │   └── progress/ # Progress Matrix
-│   │   ├── community/
+│   │   ├── campus/
 │   │   │   ├── lost-found/
-│   │   │   └── marketplace/
-│   │   └── maps/         # Point Routes
+│   │   │   ├── prayers/
+│   │   │   ├── doweats/    # Phase 2 revenue
+│   │   │   ├── merch/      # Phase 2 revenue
+│   │   │   └── marketplace/ # Phase 2 revenue
+│   │   └── maps/           # Point Routes (MapLibre)
 │   ├── (auth)/           # Unauthenticated routes
 │   │   ├── login/
 │   │   ├── signup/
