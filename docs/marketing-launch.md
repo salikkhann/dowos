@@ -106,7 +106,8 @@ Stories only — no feed posts yet. Build curiosity without revealing the produc
 | Date | Story content | Purpose |
 |---|---|---|
 | Mar 7 | "Something big is coming for Dow students 🎓" | Plant the seed |
-| Mar 9 | Screenshot of AMBOSS / UWorld pricing in USD. Caption: "This is what medical students in Pakistan are paying." | Establish the pain point + competitor pricing |
+| Mar 9 | Screenshot of AMBOSS / UWorld pricing in USD. Caption: "This is what medical students in Pakistan are paying." | Establish the pain point — international pricing |
+| Mar 10 | Screenshot: a past-paper app. Price tag visible: "PKR 5 000 / year". Caption: "And the local options aren't much better." | Hit the local alternative — same price bracket, one feature, no polish |
 | Mar 11 | Blurred app UI. Caption: "Not for long." | Tease the product exists |
 | Mar 12 | 3-second AI Tutor clip (no voiceover, just the screen). Caption: "AI that actually knows your curriculum." | Show the wow factor |
 | Mar 13 | "Tomorrow. 🗓️" | Final hook before beta |
@@ -129,8 +130,8 @@ Cut to a student at 2 AM, textbooks everywhere.
 Text overlay: "…for apps that don't even know their curriculum."
 
 [5–8 s — COMPETITOR JABS]
-Quick cuts of generic app UIs.
-Text labels: "Generic.  Expensive.  Not yours."
+Quick cuts: AMBOSS pricing screen → a glitchy past-paper app mid-crash.
+Text labels: "Generic.  Expensive."  →  "One feature.  PKR 5 000 / yr.  Crashes."
 
 [8–18 s — PRODUCT REVEAL]
 DowOS logo.  Demo reel:
@@ -249,8 +250,8 @@ This is the heart of the campaign. One feature per day. Every post teaches the a
 - Slide 6: "Unlimited questions. Zero cost. Follow for more."
 
 **Caption:**
-> MCQ Solver doesn't just test you.
-> It teaches you why the right answer is right — and why the wrong ones are wrong.
+> Not just past papers. Not just a list of questions.
+> MCQ Solver teaches you WHY — the right answer and the wrong ones.
 > Drill by module. By subject. By year. No limit. 📖
 
 ---
@@ -405,15 +406,16 @@ Options: WhatsApp / Notice boards / I usually don't
 ---
 
 #### Mar 26 — Pro / Dow Credits 💎
-**Post type:** Carousel (6 slides)
+**Post type:** Carousel (7 slides)
 **Hook (Slide 1):** "Less than one month of AMBOSS. Forever."
 
 **Slides:**
-- Slide 2: Side-by-side comparison — AMBOSS "$12.99 / mo = PKR 3 600+ / mo" vs DowOS "PKR 3 000 / year (total)"
-- Slide 3: What Pro unlocks — Unlimited AI Tutor, Viva Bot (180 min / mo), future premium features
-- Slide 4: What's free — MCQ Solver (unlimited), Timetable, Attendance, Maps, Browse Q&A, Prayer Times, Lost & Found, Announcements
-- Slide 5: How to pay — Dow Credits. Manual top-up. Verified in 5–10 minutes. No USD, no foreign credit card hassle.
-- Slide 6: "For Dow students. By Dow students. Follow for more."
+- Slide 2: vs International — AMBOSS "$12.99 / mo = PKR 3 600+ / mo" vs DowOS "PKR 3 000 / year (total)"
+- Slide 3: vs Local — "Past papers only. PKR 5 000 / yr. Buggy." vs DowOS "12 features. PKR 3 000 / yr. Actually works."
+- Slide 4: What Pro unlocks — Unlimited AI Tutor, Viva Bot (180 min / mo), future premium features
+- Slide 5: What's free — MCQ Solver (unlimited), Timetable, Attendance, Maps, Browse Q&A, Prayer Times, Lost & Found, Announcements
+- Slide 6: How to pay — Dow Credits. Manual top-up. Verified in 5–10 minutes. No USD, no foreign credit card hassle.
+- Slide 7: "For Dow students. By Dow students. Follow for more."
 
 **Caption:**
 > DowOS Pro isn't an upsell.
@@ -498,6 +500,7 @@ This is **Salik's** post — write it in your own voice.  Here is the skeleton a
 - International ed-tech apps charge $150–300 / year.
 - They're built for Harvard and Oxford curricula.
 - Pakistani medical students pay the same price for a fraction of the value.
+- The local alternatives? One feature — past papers. PKR 5 000 a year. And the interface crashes.
 - No single app combines timetable + attendance + AI + MCQ + campus life.
 - I saw this gap every day.  So I built the answer.
 

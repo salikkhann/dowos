@@ -42,6 +42,10 @@ shadcn/ui components already installed: `badge`, `button`, `card`, `input`, `lab
 
 **Do NOT install new packages.** The stack is locked. If something genuinely isn't here, flag it — don't npm install.
 
+⚠️ **`adhan` and `hijri-converter` are NOT yet in `package.json`.** They are Phase 2A install tasks. Do NOT `import` from them until they appear in the lockfile — prayer features will error if you try.
+
+📱 **Mobile:** The Next.js build is wrapped in **Capacitor.js** on iOS / Android. All code is standard web. `navigator.geolocation` works in the Capacitor webview without a plugin. Do NOT use any React Native or native mobile APIs.
+
 ---
 
 ## 🎨 Design Tokens — use these everywhere
@@ -194,6 +198,17 @@ src/app/
 
 ---
 
+## 🔐 Auth & Middleware
+
+Route-group auth is enforced by `src/middleware.ts` at the project root.
+
+- Every request to an `(app)/` route: middleware reads the Supabase session via `createServerClient`. No valid session → redirect to `/login`.
+- `(auth)/` routes (login, signup, verify) bypass the session check entirely.
+- Do NOT add auth checks inside individual page components. The middleware is the single gate.
+- The middleware sets cookies required by `createServerClient` in Server Components — do not remove or skip it.
+
+---
+
 ## 🧭 Nav Config (locked — do not change without a decision doc update)
 
 ### Mobile bottom nav (5 items, 44 px tall, safe-area inset)
@@ -237,6 +252,67 @@ src/app/
   Admin              /admin                [role-gated — only if users.role = 'admin']
   Help               /help
 ```
+
+---
+
+## 📦 Import paths — always use these
+
+| What | Pattern |
+|---|---|
+| shadcn/ui | `import { Button } from "@/components/ui/button"` |
+| Zustand store | `import { useAuthStore } from "@/stores/auth"` |
+| Custom hook | `import { useXxx } from "@/hooks/xxx"` |
+| Shared type | `import type { Xxx } from "@/types/xxx"` |
+| Utility | `import { xxx } from "@/lib/xxx"` |
+| Supabase (browser) | `import { supabase } from "@/lib/supabase"` |
+
+Always `@/`. Never relative paths across folders (e.g. `../../lib/foo`).
+
+### NavShell component tree
+
+```
+src/components/nav/
+├── NavShell.tsx       ← layout wrapper. Renders BottomNav OR Sidebar based on viewport (< 1024 px / ≥ 1024 px).
+├── BottomNav.tsx      ← mobile nav. 5 items. 44 px tall. safe-area-inset-bottom.
+├── Sidebar.tsx        ← desktop nav. Config-driven from nav.ts.
+└── nav.ts             ← nav config array. Single source of truth for sidebar items, icons, routes, badges.
+```
+
+---
+
+## 🗃️ State — what lives where
+
+**Zustand (global) — stores in `src/stores/`:**
+- `useAuthStore` — user profile (name, email, role, isPro). Populated once after login.
+- `useCreditsStore` — Dow Credits balance.
+- `useNotifStore` — unread notification count.
+
+**TanStack Query (server cache) — via `useQuery` in components:**
+- All Supabase fetches: timetable, announcements, masjid schedules, daily verse, MCQ banks, Lost & Found listings.
+- `QueryClientProvider` is in `src/app/layout.tsx` (root layout).
+- Default `staleTime`: 5 min (`300_000` ms).
+- Keys are arrays: `["timetable", userId]`, `["announcements"]`, `["masjid-schedules"]`.
+
+**Local state (`useState`):** modal open/close, form values, anything that doesn't survive navigation.
+
+**NEVER in a store:** theme (`next-themes` only), server data (TanStack Query only).
+
+---
+
+## 🌐 Environment variables
+
+All in `.env.local`. Reference `.env.local.example`. Never hardcode.
+
+| Variable | Scope |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Browser + Server |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser (RLS-protected) |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Server only** — never in browser |
+| `GEMINI_API_KEY` | Server Route Handlers |
+| `GROQ_API_KEY` | Server Route Handlers |
+| `GOOGLE_TTS_API_KEY` | Server Route Handlers |
+| `RESEND_API_KEY` | Server Route Handlers |
+| `SENTRY_DSN` | Both (auto by `@sentry/nextjs`) |
 
 ---
 
