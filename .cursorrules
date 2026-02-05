@@ -8,6 +8,7 @@ Decision docs live at: `docs/decisions/`
 Index of all locked decisions: `docs/FINAL_LOCKED_DECISIONS.md`
 Design system: `docs/4_DESIGN_SYSTEM.md`
 UX patterns + accessibility: `docs/5_UXUI_GUIDELINES.md`
+Full screen wireframes + route tree: `docs/decisions/ui-page-structure.md`
 
 ---
 
@@ -15,22 +16,31 @@ UX patterns + accessibility: `docs/5_UXUI_GUIDELINES.md`
 
 | Layer | Choice |
 |---|---|
-| Framework | Next.js 15 — App Router only. No Pages Router. |
-| Language | TypeScript strict mode. No `any`. |
+| Framework | Next.js 15 — App Router only. No Pages Router. No `pages/` directory. |
+| Language | TypeScript strict mode. No `any`. Use `unknown` + narrowing or proper types in `src/types/`. |
 | Styling | Tailwind CSS v4. shadcn/ui primitives. No CSS modules, no emotion, no styled-components. |
 | State | Zustand (global app state). TanStack Query (server cache + refetch). |
 | Backend / DB | Supabase — PostgreSQL + Realtime + Auth + Storage. |
-| AI | Google Gemini (primary). DeepSeek R1 (Tier 2 reasoning fallback). |
-| Mobile | Capacitor.js wrapping the Next.js build. NOT a React Native app. |
+| AI – Tier 1 | Google Gemini Flash (interactive chat, MCQ explanations). |
+| AI – Tier 2 | DeepSeek R1 (reasoning fallback when Flash errors 3×). |
+| AI – Extraction | Gemini 2.5 Pro (PDF text extraction via Files API only). |
+| Speech – STT | Groq Whisper Large v3 Turbo. NOT OpenAI Whisper. |
+| Speech – TTS | Google Cloud TTS. |
+| Push notifications | Firebase Cloud Messaging (FCM). |
+| Maps | MapLibre GL JS + PMTiles. NOT Google Maps JS SDK. |
+| Prayer calc | `adhan` npm package — azan times + qibla bearing. Client-side only, zero API calls. |
+| Hijri date | `hijri-converter` npm package. Client-side only, zero API calls. |
 | Icons | Lucide React. 24 px default, 1.5 px stroke, linear style. |
 | Fonts | Outfit Bold (headings). Inter (body). JetBrains Mono (scores, metrics, order codes). |
-| Path alias | `@/*` → `src/*` |
-| Toasts | Sonner (shadcn toast wrapper). One instance at app root. |
-| Dark mode | next-themes. Provider at root layout. `dark:` Tailwind classes. |
+| Path alias | `@/*` → `src/*`. Always use this. Never relative cross-folder imports. |
+| Toasts | Sonner (shadcn toast wrapper). One instance at app root. Never stack. |
+| Dark mode | next-themes. Provider at root layout. `dark:` Tailwind classes. Do NOT mirror in Zustand. |
 | Error reporting | Sentry (`@sentry/nextjs`). Auto-captures unhandled exceptions. |
-| Email | Resend. API key in `.env.local`. |
+| Email | Resend. `RESEND_API_KEY` in `.env.local`. |
 
 shadcn/ui components already installed: `badge`, `button`, `card`, `input`, `label`, `sheet`, `skeleton`, `tooltip`
+
+**Do NOT install new packages.** The stack is locked. If something genuinely isn't here, flag it — don't npm install.
 
 ---
 
@@ -44,13 +54,13 @@ shadcn/ui components already installed: `badge`, `button`, `card`, `input`, `lab
 | Navy-50 | `#F8F9FB` | Light backgrounds |
 | Navy-100 | `#E8EDF5` | Hover backgrounds |
 | Navy-200 | `#D1DCEB` | Borders, dividers |
-| Navy-300 | `#A5B8D6` | Placeholder text (NOT body text — fails contrast) |
+| Navy-300 | `#A5B8D6` | Placeholder text ONLY. NEVER for body text — fails contrast. |
 | Navy-400 | `#6B85B3` | Focus borders |
 | Offwhite | `#F5F5F7` | Page backgrounds |
-| Teal | `#00A896` | CTAs, buttons, success, links |
-| Teal-500 | `#008B7D` | Teal hover |
-| Gold | `#D4A574` | Pro/Premium badges, borders |
-| Red | `#E74C3C` | Errors, warnings |
+| Teal | `#00A896` | CTAs, buttons, success, links, next-prayer highlight |
+| Teal-500 | `#008B7D` | Teal hover state |
+| Gold | `#D4A574` | Pro / Premium badges and borders |
+| Red | `#E74C3C` | Errors, warnings, attendance danger |
 | Sub-text on glass | `#5A6B8A` | Min-contrast text on glassmorphic cards (passes 4.5:1) |
 
 **Dark mode overrides:**
@@ -63,7 +73,7 @@ shadcn/ui components already installed: `badge`, `button`, `card`, `input`, `lab
 | Gold (dark) | `#FFD89B` |
 | Red (dark) | `#FF6B5B` |
 
-### Glassmorphism (the card style used on Profile + featured sections)
+### Glassmorphism (Profile card + featured sections)
 
 ```css
 background: rgba(255, 255, 255, 0.8);
@@ -94,12 +104,93 @@ box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
 ## 📐 Layout & Spacing
 
 - **4 px base unit.** Spacing steps: 4 / 8 / 12 / 16 / 20 / 24 / 32 / 40 / 48.
-- **Mobile-first.** Every component must work on 375 px viewport.
-- **Touch targets:** minimum 44 × 44 px on all interactive elements.
+- **Mobile-first.** Every component must work on 375 px viewport. Design for this width first.
+- **Touch targets:** minimum 44 × 44 px on ALL interactive elements. No exceptions.
 - **Breakpoints:** Mobile < 768 px · Tablet 768–1023 px · Desktop ≥ 1024 px.
 - **NavShell** switches layout at 1024 px: BottomNav (mobile) ↔ Sidebar (desktop).
-- Cards: 16 px padding, 8 px radius, 12 px margin between.
+- Cards: 16 px padding, 8 px radius, 12 px gap between cards.
 - Page padding: 16 px mobile, 24 px desktop top; 40 px desktop sides.
+
+---
+
+## 🗺️ Complete Route Map — every file goes exactly here
+
+`(app)/` = auth-guarded. `(auth)/` = unauthenticated login pages. **NEVER mix these two.**
+
+```
+src/app/
+├── layout.tsx                          ← root: fonts, ThemeProvider, QueryClientProvider
+├── globals.css                         ← Tailwind imports + global resets
+├── not-found.tsx                       ← global 404. No NavShell. Navy on Offwhite.
+├── error.tsx                           ← global error boundary. No NavShell.
+│
+├── (auth)/                             ← UNAUTHENTICATED routes
+│   ├── login/
+│   │   └── page.tsx
+│   ├── signup/
+│   │   └── page.tsx
+│   └── verify/
+│       └── page.tsx
+│
+└── (app)/                              ← AUTHENTICATED routes (NavShell wraps all)
+    ├── layout.tsx                      ← mounts <NavShell />. Server Component.
+    │
+    ├── dashboard/
+    │   ├── page.tsx                    ← widget stack: greeting, timetable mini, attendance, announcements, PRAYERS, L&F
+    │   └── timetable/
+    │       └── page.tsx                ← full timetable week-view (sub-route, not nav item)
+    │
+    ├── ai/
+    │   └── page.tsx                    ← AI Tutor chat screen
+    │
+    ├── education/
+    │   ├── page.tsx                    ← cards grid: MCQ, Viva+Browse, Saved Qs, Progress Matrix
+    │   ├── mcq/
+    │   │   └── page.tsx                ← MCQ drill (source picker → drill screen → explanation)
+    │   ├── viva/
+    │   │   ├── page.tsx                ← Viva Bot entry: module → subject → mode picker [Pro gate]
+    │   │   └── browse/
+    │   │       └── page.tsx            ← Browse Q&A: expandable question list [FREE]
+    │   ├── saved/
+    │   │   └── page.tsx                ← Saved Questions from MCQ + Browse Q&A
+    │   └── progress/
+    │       └── page.tsx                ← Progress Matrix heatmap
+    │
+    ├── campus/
+    │   ├── page.tsx                    ← Campus cards grid: L&F, Prayers, revenue stubs
+    │   ├── lost-found/
+    │   │   └── page.tsx                ← Lost & Found: list + post form
+    │   ├── prayers/
+    │   │   └── page.tsx                ← Prayer Times full page (azan, masjid, qibla, verse)
+    │   ├── doweats/
+    │   │   └── page.tsx                ← [Coming Soon] stub
+    │   ├── merch/
+    │   │   └── page.tsx                ← [Coming Soon] stub
+    │   └── marketplace/
+    │       └── page.tsx                ← [Coming Soon] stub
+    │
+    ├── maps/
+    │   └── page.tsx                    ← MapLibre campus map (bus routes + walking paths)
+    │
+    ├── settings/
+    │   └── page.tsx
+    ├── profile/
+    │   └── page.tsx                    ← glassmorphic student card + photo upload
+    ├── help/
+    │   └── page.tsx
+    │
+    └── admin/                          ← service-role gated. Middleware checks users.role = 'admin'.
+        ├── layout.tsx                  ← auth check: non-admin → redirect /dashboard
+        ├── page.tsx                    ← admin dashboard overview
+        ├── content/
+        │   └── page.tsx                ← upload (MCQ / Viva / PDF) + list + manage
+        ├── approvals/
+        │   └── page.tsx                ← Dow ID approval queue
+        ├── analytics/
+        │   └── page.tsx                ← cost + usage charts (Phase 8)
+        └── prayers/
+            └── page.tsx                ← imam form: edit masjid schedules + daily verse
+```
 
 ---
 
@@ -124,7 +215,8 @@ box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
 
 ── Study ─────────────────
   MCQ Solver         /education/mcq
-  Viva Bot           /education/viva       [Pro gate] module→subject; Browse Q&A (Free) also here at /education/viva/browse
+  Viva Bot           /education/viva       [Pro gate] module→subject; Browse Q&A (Free) at /education/viva/browse
+  Saved Questions    /education/saved      bookmarked Qs from MCQ + Browse Q&A
   Progress Matrix    /education/progress
 
 ── Campus ────────────────
@@ -136,50 +228,133 @@ box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
   Maps               /maps
 
 ── Identity ──────────────
-  [Avatar mini-card: 48 px circle, Pro ring if active]
+  [Avatar mini-card: 48 px circle, Gold ring if Pro]
+  Tap (mobile) → bottom sheet: Settings / Profile / Help / Logout
 
 ── System ────────────────
   Settings           /settings
   Profile            /profile
-  Admin              /admin                [role-gated]
+  Admin              /admin                [role-gated — only if users.role = 'admin']
   Help               /help
 ```
 
 ---
 
+## 🕌 Prayer Times — specific rules for this feature
+
+Prayer Times is **client-side-first**. The core calculation never hits a server or third-party API.
+
+**Azan times (5 prayers + Sunrise):**
+- Use `adhan` npm package.
+- Fixed coordinates: Karachi `{ latitude: 24.8607, longitude: 67.0011 }`.
+- Calculation method: **Umm al-Qura** — standard across Pakistan. Set via `adhan.CalculationMethod.UmmAlQura()`.
+- Recalculate on every page load for today's date. Do NOT cache across days.
+- Display order: Fajr → Sunrise → Dhuhr → Asr → Maghrib → Isha.
+- Passed prayers: show ✓ checkmark (Teal). Next upcoming prayer: bold + Teal text.
+
+**Qibla compass:**
+- Calculate bearing via `adhan` using device geolocation (`navigator.geolocation.getCurrentPosition`).
+- If user denies permission, fall back to Karachi coordinates silently — do not show an error.
+- Render a simple compass rose (CSS or SVG). Arrow points toward Mecca. Show numeric bearing (e.g. `247°`).
+
+**Hijri date:**
+- Use `hijri-converter` package. Calculate from today's Gregorian date.
+- Display at page top in Arabic numeral format: `6 Sha'ban 1447`.
+
+**Masjid congregational times (jamaat):**
+- These ARE stored in Supabase: `masjid_schedules` table.
+- Two masjids: `masjid_id = 'dow_main'` (Dow Main Building) and `masjid_id = 'chk'` (Civil Hospital Karachi).
+- Fetched server-side via TanStack Query. Show skeleton while loading.
+- Updated manually by imam via `/admin/prayers`.
+
+**Daily Verse / Hadith:**
+- One row per date in `daily_content` table. Fetched server-side.
+- If today's row is missing, fall back to a hardcoded default verse — never show an empty card.
+
+**Dashboard mini-card:**
+- Shows: next upcoming prayer name + time + live countdown (updates every second via `setInterval`).
+- Always visible on Dashboard. Never conditionally hidden.
+- Calculated client-side — same `adhan` logic, no fetch.
+
+**Logging:**
+- Fire `prayer_page_viewed` event to `app_events` when the full `/campus/prayers` page mounts.
+- Prayer calc itself is local — no `logApiCall()` needed.
+
+---
+
 ## 📋 Conventions — follow these on every file
 
-1. **`'use client'` only on leaf components** that need hooks (useState, useEffect, event handlers). Layout files and pages are Server Components by default.
-2. **Skeleton-first loading.** Every async page renders `<Skeleton>` shapes while data loads. No full-page spinners. Each widget skeletonises independently.
-3. **Transitions:** 100 ms tap · 150 ms hover · 200 ms route/fade · 250 ms sheet. Only animate `transform` + `opacity` — never width/height.
-4. **Focus rings:** `focus-visible:ring-2 ring-teal-500 ring-offset-2` on every interactive element.
-5. **Reduced motion:** All pulses use `motion-safe:animate-pulse`. Wrap animations in `@media (prefers-reduced-motion: no-preference)`.
-6. **WCAG AA minimum.** Body text contrast ≥ 4.5:1. Never use Navy-300 (`#A5B8D6`) for text on light backgrounds — use `#5A6B8A`.
-7. **Images:** Use `next/image` with explicit `width` + `height`. Add `priority` on above-fold images.
-8. **Secrets:** All API keys in `.env.local` only. Never hardcode.
-9. **Timezone:** `Asia/Karachi` (UTC+5) everywhere. Date display: DD/MM/YYYY unless an API requires ISO.
-10. **Currency:** PKR. All amounts in Pakistani Rupees. 1 Dow Credit = PKR 1.
-11. **Supabase:** RLS on every table. Students read/write own rows only. Admin = service-role. Use `createBrowserClient` / `createServerClient` from `src/lib/supabase.ts`.
-12. **AI rate limits (enforce server-side):** AI Tutor — Free: soft 2 / hard 4 msgs per day. Pro: unlimited. MCQ: unlimited. Viva Bot: Pro-only, 180 min/mo.
-13. **Branch discipline:** Never push to `main`. Feature branch → PR → merge.
-14. **Toasts:** Sonner via shadcn toast wrapper. Single instance mounted at app root. Never stack — replace if same type already showing.
-15. **Dark mode:** `next-themes` is the single source of truth. Provider lives in `app/layout.tsx`. Do NOT mirror theme state in Zustand. Use `dark:` Tailwind classes. Add `suppressHydrationWarning` on `<html>`.
-16. **API call logging:** Every call to an external AI/ML provider (Gemini, DeepSeek, Groq, Google TTS, Google Geocoding) MUST log to `api_usage_log` via `logApiCall()` from `src/lib/api-logger.ts`. Never call a provider without logging.
-17. **Error reporting:** Sentry is installed. Unhandled exceptions auto-captured. Do not add manual `Sentry.captureException()` unless the error would otherwise be swallowed silently.
-18. **Admin auth:** Two layers. (1) Middleware checks `users.role = 'admin'` — non-admins redirect to `/dashboard`. (2) Admin API routes use the service-role Supabase client server-side. Never expose service-role key to the browser.
-19. **404 / error pages:** `not-found.tsx` and `error.tsx` at `src/app/` root. Minimal centered layout — no NavShell. Navy text on Offwhite. Simple message + back button.
-20. **Upload pipeline:** Long-running admin jobs (citation enrichment, explanation-fix, PDF extraction) run as Vercel Route Handlers and stream progress via SSE. See `docs/decisions/upload-pipeline.md`.
+1. **`'use client'` only on leaf components** that need hooks (useState, useEffect, event handlers). Pages and layouts are Server Components by default. Never add `'use client'` to a layout or page unless it genuinely needs client state.
+2. **Skeleton-first loading.** Every async data fetch shows `<Skeleton>` shapes while loading. No full-page spinners. Each widget / card skeletonises independently.
+3. **Transitions:** 100 ms tap · 150 ms hover · 200 ms route/fade · 250 ms sheet. Only animate `transform` + `opacity` — never `width`, `height`, or `left/top`.
+4. **Focus rings:** `focus-visible:ring-2 ring-teal-500 ring-offset-2` on every interactive element. No exceptions.
+5. **Reduced motion:** All pulses use `motion-safe:animate-pulse`. Wrap CSS animations in `@media (prefers-reduced-motion: no-preference)`.
+6. **WCAG AA minimum.** Body text contrast ≥ 4.5:1. NEVER use Navy-300 (`#A5B8D6`) for text on light backgrounds — use `#5A6B8A` as the minimum.
+7. **Images:** `next/image` for every `<img>`. Explicit `width` + `height`. Add `priority` prop on above-fold images.
+8. **Secrets:** All API keys, tokens, and credentials live in `.env.local` only. Access via `process.env.VARIABLE_NAME`. NEVER hardcode.
+9. **Timezone:** `Asia/Karachi` (UTC+5) everywhere. Date display format: DD/MM/YYYY in UI. ISO 8601 only when an external API requires it.
+10. **Currency:** PKR. All amounts in Pakistani Rupees. 1 Dow Credit = PKR 1. Never show USD.
+11. **Supabase client rules:**
+    - Browser (client components): `createBrowserClient()` from `src/lib/supabase.ts`.
+    - Server (Server Components, Route Handlers, middleware): `createServerClient(cookies)`.
+    - NEVER use `createBrowserClient` inside a Server Component — it will fail silently or leak.
+    - RLS on every table. Students read/write own rows. Admin uses service-role client server-side only.
+12. **AI rate limits (enforce server-side, not client):** AI Tutor — Free: soft warning at 2 msgs/day, hard block at 4. Pro: unlimited. MCQ Solver: unlimited. Viva Bot: Pro-only, 180 min/mo.
+13. **Branch discipline:** NEVER push to `main`. Feature branch → commit → push → PR → merge. Always.
+14. **Toasts:** Sonner via shadcn. Single instance at app root. One toast per type at a time — new replaces old, never stack.
+15. **Dark mode:** `next-themes` `useTheme()` is the single source of truth. Provider in `app/layout.tsx`. Add `suppressHydrationWarning` on the root `<html>` tag. Use `dark:` Tailwind classes for every styled element.
+16. **API call logging:** Every call to Gemini, DeepSeek, Groq, Google TTS, or Google Geocoding MUST go through `logApiCall()` from `src/lib/api-logger.ts` AFTER the call completes. Local calculations (prayer times, Hijri, qibla) do NOT need logging.
+17. **Error reporting:** Sentry auto-captures unhandled exceptions. Do NOT wrap everything in `try/catch` with `Sentry.captureException()` — let unhandled errors bubble. Only manually capture if the error would otherwise be completely swallowed.
+18. **Admin auth — two layers:**
+    (1) `admin/layout.tsx` middleware checks `users.role = 'admin'`. Non-admins redirect to `/dashboard`.
+    (2) Admin API / Route Handlers use the service-role Supabase client. The service-role key is NEVER sent to the browser.
+19. **404 / error pages:** `not-found.tsx` and `error.tsx` at `src/app/` root. Minimal centered layout — no NavShell wrapper. Navy text on Offwhite. Simple message + "← Back" button.
+20. **Upload pipeline:** Long-running admin jobs (PDF extraction, citation enrichment, explanation-fix) run as Vercel Route Handlers and stream progress via SSE. See `docs/decisions/upload-pipeline.md`.
+21. **Server actions:** Place in a dedicated `actions/` subfolder per feature directory. Add `'use server'` at the top of the file. Return typed results — never `throw` from a server action; return `{ error: string }` instead so the UI can handle it.
+22. **Pro paywall gates:** Check Pro status server-side before returning Viva Bot data or unlocking AI Tutor limits. Client-side gate is UI-only — it can be bypassed. The real enforcement is the Route Handler / server action.
+
+---
+
+## 🚫 NEVER do these — hard stops
+
+If you are about to do any of the following, stop immediately. These are non-negotiable.
+
+1. **NEVER use Pages Router.** No `pages/` directory anywhere. No `getServerSideProps`. No `getStaticProps`. No `getInitialProps`. App Router Server Components + `'use client'` leaves only.
+2. **NEVER install a new npm package.** The stack is locked. Check `package.json` first. If something is genuinely missing, flag it to the developer — do not install.
+3. **NEVER use the `any` type.** TypeScript strict mode. Define types in `src/types/` or use `unknown` + type narrowing.
+4. **NEVER hardcode API keys or secrets.** `.env.local` only. Always `process.env.VARIABLE_NAME`.
+5. **NEVER call an external AI/ML provider without `logApiCall()`.** Gemini, DeepSeek, Groq, Google TTS, Google Geocoding — every single one must be logged. Local calc (prayer, hijri, qibla) is exempt.
+6. **NEVER create a file outside the route map defined above.** File-system IS routing in Next.js App Router. A file in the wrong folder = a page at the wrong URL or an unreachable page.
+7. **NEVER use `createBrowserClient` inside a Server Component.** Server Components use `createServerClient(cookies)`.
+8. **NEVER use CSS modules, styled-components, or emotion.** Tailwind v4 + shadcn/ui only. Period.
+9. **NEVER skip the skeleton state.** Every async page or widget that fetches data must show `<Skeleton>` shapes while loading.
+10. **NEVER use an API or fetch to calculate prayer times, Hijri dates, or Qibla direction.** These are computed client-side via `adhan` and `hijri-converter`. Zero network calls for this data.
+11. **NEVER expose the service-role Supabase key to the browser.** It grants full database access with no RLS. Server-side Route Handlers only.
+12. **NEVER push directly to `main`.** Feature branch → commit → push → merge. Always.
+13. **NEVER use Navy-300 (`#A5B8D6`) for body text on light backgrounds.** Fails WCAG AA contrast. Use `#5A6B8A` as minimum.
+14. **NEVER stack toasts.** Sonner replaces — one toast per type at a time.
+15. **NEVER mirror theme state in Zustand or any other store.** `next-themes` `useTheme()` is the single source of truth.
+16. **NEVER put an auth-guarded page in `(auth)/` or an unauthenticated page in `(app)/`.** Auth boundary is defined by the route group. Never mix.
+17. **NEVER throw from a server action.** Return `{ error: string }` so the UI can display a toast. Throwing crashes the request silently.
+18. **NEVER enforce Pro-tier limits client-side only.** Client gates are UI-only sugar. Real enforcement must happen server-side in the Route Handler or server action.
 
 ---
 
 ## 🚨 Stop-and-flag checklist
 
-Before shipping any component, confirm:
-- [ ] Decision doc exists for this feature?  →  If no, **stop. Flag it.**
-- [ ] Touch targets ≥ 44 × 44 px?
-- [ ] Skeleton state implemented?
-- [ ] Dark mode tested?
-- [ ] Focus ring present on all interactive elements?
-- [ ] No hardcoded secrets?
-- [ ] `next/image` used for all images?
-- [ ] API calls logged via `logApiCall()`?
+Run through every single item before you ship a component. All must pass.
+
+- [ ] **Decision doc exists** for this feature? → No doc = stop. Flag it. Do not build.
+- [ ] **Route path matches the route map** in this file? → Wrong path = unreachable page or wrong URL.
+- [ ] **File is in the correct route group?** `(app)/` for auth-guarded, `(auth)/` for login pages. Never mix.
+- [ ] **Touch targets ≥ 44 × 44 px** on every button, link, nav item, and tappable element?
+- [ ] **Skeleton state** implemented for every async data fetch? No spinners.
+- [ ] **Dark mode classes (`dark:`)** present on every styled element? Test by toggling.
+- [ ] **Focus ring** (`focus-visible:ring-2 ring-teal-500 ring-offset-2`) on every interactive element?
+- [ ] **No hardcoded secrets?** All keys from `.env.local` via `process.env`.
+- [ ] **`next/image`** used for every image? With explicit `width` + `height`?
+- [ ] **`logApiCall()`** wired after every external AI/ML call? (Skip for local prayer/hijri calc.)
+- [ ] **`npm run build`** passes with zero errors before you hand off?
+- [ ] **Tested at 375 px viewport width?**
+- [ ] **Pro paywall enforced server-side**, not client-side only?
+- [ ] **Server actions return typed results**, never throw?

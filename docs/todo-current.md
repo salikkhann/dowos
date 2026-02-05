@@ -1,14 +1,59 @@
 # DowOS – Feature Build Todo
 
-Last updated: 2026-02-05 (Session 5). Covers Phases 2–9.
+Last updated: 2026-02-05 (Session 5). Covers Phases 1–9.
 Tick items off as you go. Re-create when the list drains.
 
 ---
 
 ## ✓ Phase 1 – Foundation & Decisions (Days 1–9) — ALL DONE
 
-All 17 decisions locked. Auth end-to-end. `FINAL_LOCKED_DECISIONS.md` rewritten.
-See `docs/sessions/` for the full log.
+### ✓ Backend & Auth (Days 1–2)
+- [x] Create `src/lib/supabase.ts` — `createBrowserClient` + `createServerClient`
+- [x] Write Supabase migration: `users` table + RLS policies
+- [x] Write Supabase migration: `user_preferences` table
+- [x] Build signup flow: email input → OTP send → OTP verify
+- [x] Build profile step: roll number, batch year, lab group (A–F), learning style
+- [x] Build Dow ID upload step: photo upload to Supabase Storage, pending-approval state
+- [x] Build login flow: email → OTP → session cookie
+- [x] Write middleware route guard on `(app)/` group (redirects unauthenticated users)
+- [x] Smoke-test the full auth loop locally (signup → login → guarded page → logout)
+- [x] Merge `feature/auth-onboarding` → `main`
+
+### ✓ Architecture Decisions (Days 3–9)
+- [x] Day 3 – RAG: `rag-architecture.md` LOCKED. Three-tier model routing (Flash / DeepSeek R1 / Flash-Lite). Hybrid pgvector retrieval. Gemini 2.5 Pro for PDF extraction via Files API.
+- [x] Day 4 – Maps: `maps-platform.md` LOCKED. MapLibre GL JS + PMTiles. Point map (bus routes) + Campus indoor map (floor-plan gated). Google Geocoding scoped to place-search only.
+- [x] Day 5 – Voice/STT: `voice-stt.md` LOCKED. Groq Whisper Large v3 Turbo. Gemini medical-term correction pass. Upgrade path to Deepgram Nova-3 Medical documented.
+- [x] Day 6 – AI Routing: `ai-routing-fallback.md` LOCKED. Complexity router triggers locked. 3-attempt fallback chain Tier 1, 2-attempt downgrade Tier 2.
+- [x] Day 7 – Mobile: `mobile-delivery.md` LOCKED. Capacitor.js. Android Play Store immediate, iOS Phase 3. PWA rejected (discoverability + iOS Safari push).
+- [x] Day 8 – Viva Orchestration: `viva-bot-orchestration.md` LOCKED. 5-state machine (GREET → ASK → EVALUATE → FOLLOWUP → SCORE). Adaptive difficulty 1–5. LangGraph rejected.
+- [x] Day 9 – Sign-off: All conflicts resolved. Rate limits locked at soft 2 / hard 4. `FINAL_LOCKED_DECISIONS.md` rewritten as 17-decision index.
+
+### ✓ UI & Product Decisions (Days 4–5, extended)
+- [x] Education tab structure: Browse Q&A (Free, expandable list), Viva Bot (Pro), Saved Questions (Phase 1), MCQ with analytics + AMBOSS drill filters. `education-tab.md` LOCKED.
+- [x] Mobile vs Web UI: One component tree, two layout wrappers. 5-item bottom nav / grouped sidebar. Config-driven nav via `nav.ts`. `mobile-web-ui.md` LOCKED.
+- [x] All-pages UI structure: Every screen wireframed — Dashboard (6 widgets + timetable sub-page), AI Chat, Education cards, Maps, Campus cards, L&F, Prayer Times, Announcements, Profile. Full route tree. `ui-page-structure.md` LOCKED.
+- [x] Profile card + UX conventions: Glassmorphic student card (Gold ring if Pro), sidebar avatar mini-card, time-aware greeting, skeleton-first loading, touch targets, focus rings, contrast rules, reduced-motion. `profile-card-ux.md` LOCKED.
+
+### ✓ Product & Operational Decisions
+- [x] Dow Credits + Pro upgrade flow: Full UX flow specced. `credits-payment.md` LOCKED.
+- [x] Dow ID approval workflow: Admin queue + reject reason picker. `dow-id-approval.md` LOCKED.
+- [x] Push notification permission strategy: Day 2 ask, priming card, max 2 asks. `push-notifications.md` LOCKED.
+- [x] DowEats operational spec: Item-first menu, 6-digit code, gate delivery. `doweats-ops.md` LOCKED.
+- [x] Marketplace ops: Withdrawal + disputes specced. `marketplace-ops.md` LOCKED.
+- [x] Viva Bot scoring: 3-mode weights + LLM prompt + report format. `viva-scoring.md` LOCKED.
+
+### ✓ Stale Docs Reconciled
+- [x] Rate limit conflict resolved — locked at soft 2 / hard 4. Pre-cost-model placeholders removed.
+- [x] `5_UXUI_GUIDELINES.md` nav updated: IA tree matches locked route tree (Dashboard / Education / AI Tutor / Campus / Maps).
+- [x] `00_DISCOVERY_RESOLVED.md` maps block updated: MapLibre GL JS + PMTiles. Superseded note added.
+- [x] `FINAL_LOCKED_DECISIONS.md` rewritten: clean 17-decision index with one-line summaries + resolved-conflicts table.
+
+### ✓ Cursor Handoff Docs
+- [x] `.cursorrules` created at project root — Cursor reads it automatically every turn.
+- [x] `docs/cursor-guide.md` written — read before first Cursor session.
+- [x] `docs/decisions/upload-pipeline.md` LOCKED — Vercel Route Handlers + SSE.
+- [x] `docs/decisions/analytics-logging.md` LOCKED — api_usage_log + app_events.
+- [x] `docs/admin-content-upload.md` written — step-by-step guide for Azfar.
 
 ---
 
@@ -22,6 +67,7 @@ See `docs/sessions/` for the full log.
 - [ ] Write `src/lib/api-logger.ts` — `logApiCall()` helper
 - [ ] Write Supabase migrations: `api_usage_log` + `app_events` + RLS (admin-only read)
 - [ ] Write Supabase migrations: `modules`, `subjects`
+- [ ] Install `adhan` + `hijri-converter` npm packages (prayer calc — client-side, no API)
 
 ### 2B – NavShell + Dashboard (Days 10–11)
 - [ ] Build `<BottomNav />` — 5 items, active-route highlight, 44 px tall, safe-area inset
@@ -34,13 +80,14 @@ See `docs/sessions/` for the full log.
 - [ ] Build Dashboard page: time-aware greeting + skeleton widget stack (static first, live data in 2C)
 - [ ] Build Profile page: glassmorphic student card + photo upload — see `profile-card-ux.md` §2
 
-### 2C – Timetable & Attendance (Days 12–14)
+### 2C – Timetable, Attendance & Dashboard Widgets (Days 12–14)
 - [ ] Write Supabase migrations: `timetable_entries`, `attendance`
 - [ ] Build timetable week-view component (Mon–Fri, color-coded by module)
 - [ ] Add viva toggle + roll-number display on timetable
 - [ ] Build attendance check-in button + per-module % breakdown
 - [ ] Build runway calculator card (% attendance vs required threshold)
 - [ ] Wire live Dashboard widgets: next-class card, mark present/absent, attendance-warning banner, exam countdown, current module
+- [ ] Wire Dashboard **Prayer Times mini-card**: next upcoming prayer name + time + live countdown. Calculated client-side via `adhan` (Karachi coords, Umm al-Qura method). Always visible — never hidden. See `ui-page-structure.md` §3.
 
 ### 2D – Admin Dashboard (Days 13–14)
 - [ ] Create `/admin/` route group (service-role gated middleware)
@@ -122,7 +169,7 @@ See `docs/sessions/` for the full log.
 
 ---
 
-## Phase 5 – Community & Maps (Days 31–35)
+## Phase 5 – Community, Prayers & Maps (Days 31–35)
 
 ### 5A – Lost & Found (Days 31–32)
 - [ ] Build post form: item type (lost / found), title, description, photo upload (optional), contact method (phone / WhatsApp)
@@ -137,6 +184,7 @@ See `docs/sessions/` for the full log.
 - [ ] Add bus-route overlay (from team-traced routes, color-coded by route)
 - [ ] Build location-type filter pills: bus stops, priority areas, entrances
 - [ ] Build tap-on-marker popover: route name, stops list, estimated walk time
+- [ ] Add Prayer Room POI pin (cross-links from Prayer Times page "Show on map →")
 
 ### 5C – Announcements (Days 34–35)
 - [ ] Build admin post form: title, body (markdown), module filter (optional), expiry date
@@ -144,6 +192,24 @@ See `docs/sessions/` for the full log.
 - [ ] Build student announcements feed: card list, sorted newest first, optional module filter
 - [ ] Build push-notification permission flow: priming card shown at the right moment (see `push-notifications.md` — max 2 asks)
 - [ ] Write Supabase migration: `announcements`, `push_notifications`
+
+### 5D – Prayer Times Full Page (Days 34–35)
+- [ ] Build `/campus/prayers` page — see `ui-page-structure.md` §8 for full wireframe
+- [ ] **Today's Prayers section:** calculate Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha via `adhan` (Karachi coords, Umm al-Qura method). Show checkmark (✓) on prayers whose time has passed. Bold + Teal highlight on next upcoming prayer.
+- [ ] **Hijri date:** display at page top, calculated client-side via `hijri-converter`
+- [ ] **Dow Masjid card:** pull congregational (jamaat) times from `masjid_schedules` table (`masjid_id = 'dow_main'`). Show opening hours + jamaat times for each prayer.
+- [ ] **CHK Masjid card:** same structure, `masjid_id = 'chk'`
+- [ ] **Qibla compass widget:** get device lat/lng via `navigator.geolocation` → calculate bearing via `adhan`. Show compass rose with arrow pointing toward Mecca + numeric bearing in degrees. Fall back to Karachi coords if geolocation denied.
+- [ ] **Nearest Prayer Room card:** static text (Dow Main · Ground Floor) + "Show on map →" link that navigates to `/maps` and highlights the prayer-room POI.
+- [ ] **Daily Verse / Hadith card:** fetch today's row from `daily_content` table. Fall back to a hardcoded default verse if row is missing.
+- [ ] Wire `prayer_page_viewed` event via `app_events` table on page load
+- [ ] Write Supabase migrations: `masjid_schedules`, `daily_content`
+
+### 5E – Admin: Imam Prayer Form
+- [ ] Build `/admin/prayers` page — role-gated (imam or admin only)
+- [ ] Form: select masjid (Dow Main / CHK) → edit congregational times for each prayer → save to `masjid_schedules`
+- [ ] Form: add / edit / delete Daily Verse rows in `daily_content` (date picker + verse text + source)
+- [ ] Show current live values as read-only preview so imam can verify before saving
 
 ---
 
@@ -156,6 +222,7 @@ See `docs/sessions/` for the full log.
 - [ ] Lighthouse run: target Performance ≥ 90, Accessibility ≥ 90. Fix anything below.
 - [ ] Bundle-size check: ensure no bloat from unused deps
 - [ ] Capacitor build: `ionic build`, package APK, test install on real Android, verify FCM push arrives
+- [ ] Prayer Times offline check: verify azan calc + qibla + Hijri all work with network off
 
 ### Deferred to Phase 8 (pre-full-launch)
 - [ ] WCAG AA contrast audit — iterate during beta feedback window
@@ -170,6 +237,8 @@ See `docs/sessions/` for the full log.
 - [ ] Deploy to Vercel production with production env vars (not preview)
 - [ ] Onboard first 20–50 beta testers from Batch 1 (personal invites)
 - [ ] Dow ID approval workflow live — manual review queue active
+- [ ] Seed `masjid_schedules` with real Dow Main + CHK congregational times before launch
+- [ ] Seed first 7 days of `daily_content` (verses / hadith)
 - [ ] Instagram beta-launch Reel goes live (pain-point hook + product reveal — script in `marketing-launch.md`)
 - [ ] WhatsApp blast to Dow student groups (message in `marketing-launch.md`)
 - [ ] Monitor dashboard live: error rates (Sentry), API latency, Supabase usage, DAU
@@ -208,6 +277,7 @@ See `docs/sessions/` for the full log.
 - [ ] Produce first 100 MCQs across 2–3 modules — target ready by Day 17
 - [ ] Produce Viva sheets for all Batch 1 current modules — target ready by Day 24
 - [ ] Bulk-seed to 800+ MCQs — target Phase 8 (before full launch)
+- [ ] Prepare rolling 30-day `daily_content` seed (verses + hadith) — target ready by Day 34
 
 ### Marketing — from Mar 7
 - [ ] Mar 7–13: Post Instagram teaser Stories (5-post sequence — see `marketing-launch.md`)
@@ -218,10 +288,11 @@ See `docs/sessions/` for the full log.
 ### Campus Map Data
 - [ ] Request CAD/PDF floor plans for Dow main building (campus indoor map dependency)
 - [ ] Trace 20–30 bus routes in QGIS — target ready by Day 31 (Point Routes dependency)
+- [ ] Mark Prayer Room POI on campus map GeoJSON (Dow Main Ground Floor)
 
 ---
 
 ### Housekeeping
-- [ ] PR `feature/day4-maps-decision` → `main` (all Phase 1 work)
+- [x] PR `feature/day4-maps-decision` → `main` — DONE (merged + pushed)
 - [ ] Commit each logical unit to a feature branch → PR → merge (never push to main)
 - [ ] Keep `docs/sessions/` updated every session (mandatory per CLAUDE.md #11)

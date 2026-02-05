@@ -1,6 +1,6 @@
-# DowOS — Cursor Rules (source)
+# DowOS — Cursor / Windsurf Rules (source)
 
-**NOTE:** This file is the human-readable source. The live rules file that Cursor reads is `.cursorrules` at the project root — it is already created and up to date. If you edit this file, also update `.cursorrules` to match. Keep under 12 K characters.
+**NOTE:** `.cursorrules` at the project root is the live file Cursor reads automatically every turn. This file is the human-readable backup. They must stay in sync. If you edit one, update the other.
 
 ---
 
@@ -11,9 +11,10 @@
 Before touching any feature, read the relevant decision doc in `docs/decisions/`. Every architectural choice is locked there. Do NOT guess or invent architecture. If a feature has no decision doc and you can't find it in `FINAL_LOCKED_DECISIONS.md`, **stop and flag it** — do not build anything undocumented. Ask the developer first.
 
 Decision docs live at: `docs/decisions/`
-Index of all 17 locked decisions: `docs/FINAL_LOCKED_DECISIONS.md`
+Index of all locked decisions: `docs/FINAL_LOCKED_DECISIONS.md`
 Design system: `docs/4_DESIGN_SYSTEM.md`
 UX patterns + accessibility: `docs/5_UXUI_GUIDELINES.md`
+Full screen wireframes + route tree: `docs/decisions/ui-page-structure.md`
 
 ---
 
@@ -21,18 +22,32 @@ UX patterns + accessibility: `docs/5_UXUI_GUIDELINES.md`
 
 | Layer | Choice |
 |---|---|
-| Framework | Next.js 15 — App Router only. No Pages Router. |
-| Language | TypeScript strict mode. No `any`. |
+| Framework | Next.js 15 — App Router only. No Pages Router. No `pages/` directory. |
+| Language | TypeScript strict mode. No `any`. Use `unknown` + narrowing or proper types in `src/types/`. |
 | Styling | Tailwind CSS v4. shadcn/ui primitives. No CSS modules, no emotion, no styled-components. |
 | State | Zustand (global app state). TanStack Query (server cache + refetch). |
 | Backend / DB | Supabase — PostgreSQL + Realtime + Auth + Storage. |
-| AI | Google Gemini (primary). DeepSeek R1 (Tier 2 reasoning fallback). |
+| AI – Tier 1 | Google Gemini Flash (interactive chat, MCQ explanations). |
+| AI – Tier 2 | DeepSeek R1 (reasoning fallback when Flash errors 3×). |
+| AI – Extraction | Gemini 2.5 Pro (PDF text extraction via Files API only). |
+| Speech – STT | Groq Whisper Large v3 Turbo. NOT OpenAI Whisper. |
+| Speech – TTS | Google Cloud TTS. |
+| Push notifications | Firebase Cloud Messaging (FCM). |
+| Maps | MapLibre GL JS + PMTiles. NOT Google Maps JS SDK. |
+| Prayer calc | `adhan` npm package — azan times + qibla bearing. Client-side only, zero API calls. |
+| Hijri date | `hijri-converter` npm package. Client-side only, zero API calls. |
 | Mobile | Capacitor.js wrapping the Next.js build. NOT a React Native app. |
 | Icons | Lucide React. 24 px default, 1.5 px stroke, linear style. |
 | Fonts | Outfit Bold (headings). Inter (body). JetBrains Mono (scores, metrics, order codes). |
-| Path alias | `@/*` → `src/*` |
+| Path alias | `@/*` → `src/*`. Always use this. Never relative cross-folder imports. |
+| Toasts | Sonner (shadcn toast wrapper). One instance at app root. Never stack. |
+| Dark mode | next-themes. Provider at root layout. `dark:` Tailwind classes. Do NOT mirror in Zustand. |
+| Error reporting | Sentry (`@sentry/nextjs`). Auto-captures unhandled exceptions. |
+| Email | Resend. `RESEND_API_KEY` in `.env.local`. |
 
 shadcn/ui components already installed: `badge`, `button`, `card`, `input`, `label`, `sheet`, `skeleton`, `tooltip`
+
+**Do NOT install new packages.** The stack is locked. If something genuinely isn't here, flag it — don't npm install.
 
 ---
 
@@ -46,16 +61,17 @@ shadcn/ui components already installed: `badge`, `button`, `card`, `input`, `lab
 | Navy-50 | `#F8F9FB` | Light backgrounds |
 | Navy-100 | `#E8EDF5` | Hover backgrounds |
 | Navy-200 | `#D1DCEB` | Borders, dividers |
-| Navy-300 | `#A5B8D6` | Placeholder text (NOT body text — fails contrast) |
+| Navy-300 | `#A5B8D6` | Placeholder text ONLY. NEVER for body text — fails contrast. |
 | Navy-400 | `#6B85B3` | Focus borders |
 | Offwhite | `#F5F5F7` | Page backgrounds |
-| Teal | `#00A896` | CTAs, buttons, success, links |
-| Teal-500 | `#008B7D` | Teal hover |
-| Gold | `#D4A574` | Pro/Premium badges, borders |
-| Red | `#E74C3C` | Errors, warnings |
+| Teal | `#00A896` | CTAs, buttons, success, links, next-prayer highlight |
+| Teal-500 | `#008B7D` | Teal hover state |
+| Gold | `#D4A574` | Pro / Premium badges and borders |
+| Red | `#E74C3C` | Errors, warnings, attendance danger |
 | Sub-text on glass | `#5A6B8A` | Min-contrast text on glassmorphic cards (passes 4.5:1) |
 
 **Dark mode overrides:**
+
 | Token | Hex |
 |---|---|
 | BG | `#0F1823` |
@@ -64,7 +80,7 @@ shadcn/ui components already installed: `badge`, `button`, `card`, `input`, `lab
 | Gold (dark) | `#FFD89B` |
 | Red (dark) | `#FF6B5B` |
 
-### Glassmorphism (the card style used on Profile + featured sections)
+### Glassmorphism (Profile card + featured sections)
 
 ```css
 background: rgba(255, 255, 255, 0.8);
@@ -95,12 +111,64 @@ box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
 ## 📐 Layout & Spacing
 
 - **4 px base unit.** Spacing steps: 4 / 8 / 12 / 16 / 20 / 24 / 32 / 40 / 48.
-- **Mobile-first.** Every component must work on 375 px viewport.
-- **Touch targets:** minimum 44 × 44 px on all interactive elements.
+- **Mobile-first.** Every component must work on 375 px viewport. Design for this width first.
+- **Touch targets:** minimum 44 × 44 px on ALL interactive elements. No exceptions.
 - **Breakpoints:** Mobile < 768 px · Tablet 768–1023 px · Desktop ≥ 1024 px.
 - **NavShell** switches layout at 1024 px: BottomNav (mobile) ↔ Sidebar (desktop).
-- Cards: 16 px padding, 8 px radius, 12 px margin between.
+- Cards: 16 px padding, 8 px radius, 12 px gap between cards.
 - Page padding: 16 px mobile, 24 px desktop top; 40 px desktop sides.
+
+---
+
+## 🗺️ Complete Route Map — every file goes exactly here
+
+`(app)/` = auth-guarded. `(auth)/` = unauthenticated login pages. **NEVER mix these two.**
+
+```
+src/app/
+├── layout.tsx                          ← root: fonts, ThemeProvider, QueryClientProvider
+├── globals.css                         ← Tailwind imports + global resets
+├── not-found.tsx                       ← global 404. No NavShell. Navy on Offwhite.
+├── error.tsx                           ← global error boundary. No NavShell.
+│
+├── (auth)/                             ← UNAUTHENTICATED routes
+│   ├── login/page.tsx
+│   ├── signup/page.tsx
+│   └── verify/page.tsx
+│
+└── (app)/                              ← AUTHENTICATED routes (NavShell wraps all)
+    ├── layout.tsx                      ← mounts <NavShell />. Server Component.
+    ├── dashboard/
+    │   ├── page.tsx                    ← widget stack: greeting, timetable, attendance, announcements, PRAYERS, L&F
+    │   └── timetable/page.tsx          ← full timetable week-view
+    ├── ai/page.tsx                     ← AI Tutor chat
+    ├── education/
+    │   ├── page.tsx                    ← cards grid: MCQ, Viva+Browse, Saved Qs, Progress
+    │   ├── mcq/page.tsx                ← MCQ drill
+    │   ├── viva/
+    │   │   ├── page.tsx                ← Viva Bot entry [Pro gate]
+    │   │   └── browse/page.tsx         ← Browse Q&A expandable list [FREE]
+    │   ├── saved/page.tsx              ← Saved Questions
+    │   └── progress/page.tsx           ← Progress Matrix heatmap
+    ├── campus/
+    │   ├── page.tsx                    ← Campus cards grid
+    │   ├── lost-found/page.tsx         ← Lost & Found
+    │   ├── prayers/page.tsx            ← Prayer Times (azan, masjid, qibla, verse)
+    │   ├── doweats/page.tsx            ← [Coming Soon]
+    │   ├── merch/page.tsx              ← [Coming Soon]
+    │   └── marketplace/page.tsx        ← [Coming Soon]
+    ├── maps/page.tsx                   ← MapLibre campus map
+    ├── settings/page.tsx
+    ├── profile/page.tsx
+    ├── help/page.tsx
+    └── admin/                          ← service-role gated
+        ├── layout.tsx                  ← non-admin → redirect /dashboard
+        ├── page.tsx
+        ├── content/page.tsx            ← upload + list + manage
+        ├── approvals/page.tsx          ← Dow ID approval queue
+        ├── analytics/page.tsx          ← cost + usage (Phase 8)
+        └── prayers/page.tsx            ← imam: masjid schedules + daily verse
+```
 
 ---
 
@@ -125,7 +193,8 @@ box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
 
 ── Study ─────────────────
   MCQ Solver         /education/mcq
-  Viva Bot           /education/viva       [Pro gate] module→subject; Browse Q&A (Free) also here at /education/viva/browse
+  Viva Bot           /education/viva       [Pro gate]; Browse Q&A (Free) at /education/viva/browse
+  Saved Questions    /education/saved      bookmarked Qs from MCQ + Browse Q&A
   Progress Matrix    /education/progress
 
 ── Campus ────────────────
@@ -137,7 +206,8 @@ box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
   Maps               /maps
 
 ── Identity ──────────────
-  [Avatar mini-card: 48 px circle, Pro ring if active]
+  [Avatar mini-card: 48 px circle, Gold ring if Pro]
+  Tap (mobile) → bottom sheet: Settings / Profile / Help / Logout
 
 ── System ────────────────
   Settings           /settings
@@ -148,33 +218,83 @@ box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
 
 ---
 
+## 🕌 Prayer Times — specific rules for this feature
+
+Prayer Times is **client-side-first**. The core calculation never hits a server or third-party API.
+
+- **Azan times:** `adhan` package. Karachi `{ latitude: 24.8607, longitude: 67.0011 }`. Method: `UmmAlQura`. Recalculate daily on page load. Order: Fajr → Sunrise → Dhuhr → Asr → Maghrib → Isha. Passed = ✓ (Teal). Next = bold + Teal.
+- **Qibla:** `adhan` + `navigator.geolocation`. Fall back to Karachi coords silently if denied. Compass rose + numeric bearing.
+- **Hijri date:** `hijri-converter`. Client-side. Display: `6 Sha'ban 1447`.
+- **Masjid jamaat times:** Supabase `masjid_schedules` table. `dow_main` + `chk`. Fetched via TanStack Query. Updated by imam at `/admin/prayers`.
+- **Daily Verse:** Supabase `daily_content` table. One row per date. Fall back to hardcoded default if missing.
+- **Dashboard mini-card:** Next prayer + time + live countdown (`setInterval`). Always visible. Client-side only.
+- **Logging:** `prayer_page_viewed` event to `app_events` on full page mount. Calc itself = no `logApiCall()`.
+
+---
+
 ## 📋 Conventions — follow these on every file
 
-1. **`'use client'` only on leaf components** that need hooks (useState, useEffect, event handlers). Layout files and pages are Server Components by default.
-2. **Skeleton-first loading.** Every async page renders `<Skeleton>` shapes while data loads. No full-page spinners. Each widget skeletonises independently.
-3. **Transitions:** 100 ms tap · 150 ms hover · 200 ms route/fade · 250 ms sheet. Only animate `transform` + `opacity` — never width/height.
+1. **`'use client'` only on leaf components** that need hooks. Pages + layouts = Server Components by default.
+2. **Skeleton-first.** Every async fetch shows `<Skeleton>` shapes. No spinners. Each widget skeletonises independently.
+3. **Transitions:** 100 ms tap · 150 ms hover · 200 ms route · 250 ms sheet. Animate `transform` + `opacity` only.
 4. **Focus rings:** `focus-visible:ring-2 ring-teal-500 ring-offset-2` on every interactive element.
-5. **Reduced motion:** All pulses use `motion-safe:animate-pulse`. Wrap animations in `@media (prefers-reduced-motion: no-preference)`.
-6. **WCAG AA minimum.** Body text contrast ≥ 4.5:1. Never use Navy-300 (`#A5B8D6`) for text on light backgrounds — use `#5A6B8A`.
-7. **Images:** Use `next/image` with explicit `width` + `height`. Add `priority` on above-fold images.
-8. **Secrets:** All API keys in `.env.local` only. Never hardcode.
-9. **Timezone:** `Asia/Karachi` (UTC+5) everywhere. Date display: DD/MM/YYYY unless an API requires ISO.
-10. **Currency:** PKR. All amounts in Pakistani Rupees. 1 Dow Credit = PKR 1.
-11. **Supabase:** RLS on every table. Students read/write own rows only. Admin = service-role. Use `createBrowserClient` / `createServerClient` from `src/lib/supabase.ts`.
-12. **AI rate limits (enforce server-side):** AI Tutor — Free: soft 2 / hard 4 msgs per day. Pro: unlimited. MCQ: unlimited. Viva Bot: Pro-only, 180 min/mo.
-13. **Branch discipline:** Never push to `main`. Feature branch → PR → merge.
+5. **Reduced motion:** `motion-safe:animate-pulse`. Animations inside `@media (prefers-reduced-motion: no-preference)`.
+6. **WCAG AA.** Body text ≥ 4.5:1. Never Navy-300 for text — use `#5A6B8A`.
+7. **Images:** `next/image`. Explicit `width` + `height`. `priority` on above-fold.
+8. **Secrets:** `.env.local` only. `process.env.VARIABLE_NAME`. Never hardcode.
+9. **Timezone:** `Asia/Karachi` (UTC+5). Display: DD/MM/YYYY. ISO only when API requires.
+10. **Currency:** PKR everywhere. 1 Dow Credit = PKR 1.
+11. **Supabase:** Browser → `createBrowserClient()`. Server → `createServerClient(cookies)`. NEVER browser client in Server Component. RLS on every table.
+12. **AI rate limits (server-side):** AI Tutor Free: soft 2 / hard 4 / day. Pro: unlimited. MCQ: unlimited. Viva Bot: Pro-only, 180 min/mo.
+13. **Branches:** Never push to `main`. Feature branch → PR → merge.
+14. **Toasts:** Sonner. One per type. New replaces old.
+15. **Dark mode:** `next-themes` only. `suppressHydrationWarning` on `<html>`. `dark:` classes everywhere.
+16. **API logging:** Every Gemini / DeepSeek / Groq / Google TTS / Geocoding call → `logApiCall()`. Prayer calc is local — exempt.
+17. **Sentry:** Auto-captures. Don't manually wrap unless error would be swallowed.
+18. **Admin auth:** (1) `admin/layout.tsx` checks role. (2) Service-role client server-side only — never in browser.
+19. **404 / error:** `not-found.tsx` + `error.tsx` at `src/app/`. No NavShell. Navy on Offwhite.
+20. **Uploads:** Long jobs → Vercel Route Handlers + SSE. See `upload-pipeline.md`.
+21. **Server actions:** `actions/` subfolder per feature. `'use server'` at top. Return `{ error: string }` — never throw.
+22. **Pro gates:** Enforce server-side. Client gate = UI sugar only — bypassable.
+
+---
+
+## 🚫 NEVER do these — hard stops
+
+1. NEVER use Pages Router. No `pages/`, no `getServerSideProps`, no `getStaticProps`.
+2. NEVER install new packages. Stack is locked.
+3. NEVER use `any`. TypeScript strict.
+4. NEVER hardcode secrets.
+5. NEVER call AI/ML providers without `logApiCall()`.
+6. NEVER create files outside the route map.
+7. NEVER use `createBrowserClient` in a Server Component.
+8. NEVER use CSS modules / styled-components / emotion.
+9. NEVER skip skeleton state on async pages.
+10. NEVER use an API for prayer times / Hijri / Qibla. Client-side calc only.
+11. NEVER expose service-role key to browser.
+12. NEVER push to `main` directly.
+13. NEVER use Navy-300 for body text on light backgrounds.
+14. NEVER stack toasts.
+15. NEVER mirror theme state in Zustand.
+16. NEVER mix `(app)/` and `(auth)/` route groups.
+17. NEVER throw from server actions.
+18. NEVER enforce Pro limits client-side only.
 
 ---
 
 ## 🚨 Stop-and-flag checklist
 
-Before shipping any component, confirm:
-- [ ] Decision doc exists for this feature?  →  If no, **stop. Flag it.**
+- [ ] Decision doc exists? → No = stop.
+- [ ] Route path matches the route map?
+- [ ] Correct route group — `(app)/` vs `(auth)/`?
 - [ ] Touch targets ≥ 44 × 44 px?
-- [ ] Skeleton state implemented?
-- [ ] Dark mode tested?
-- [ ] Focus ring present on all interactive elements?
+- [ ] Skeleton state on every async fetch?
+- [ ] Dark mode (`dark:`) on every styled element?
+- [ ] Focus ring on every interactive element?
 - [ ] No hardcoded secrets?
-- [ ] `next/image` used for all images?
-
----
+- [ ] `next/image` with width + height?
+- [ ] `logApiCall()` after every external AI call?
+- [ ] `npm run build` passes?
+- [ ] Tested at 375 px?
+- [ ] Pro paywall enforced server-side?
+- [ ] Server actions return typed results, never throw?
