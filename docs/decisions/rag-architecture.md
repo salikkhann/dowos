@@ -146,7 +146,7 @@ Move vectors out of Supabase into a dedicated store.
 
 | Rule | Detail |
 |---|---|
-| Primary split | PDF → extract text (`pdf.js` server-side). Split on section headers first (H1 → H2 → H3), then on paragraph boundaries. |
+| Primary split | PDF → extract text via **Gemini 2.5 Pro** (native PDF ingestion via Files API — preserves layout, tables, multi-column structure without preprocessing). Split on section headers first (H1 → H2 → H3), then on paragraph boundaries. |
 | Secondary split | If a section exceeds **400 tokens**, apply recursive character splitting with separators `["\n\n", "\n", ". ", " "]`. Never split mid-sentence. |
 | Chunk size target | **300–400 tokens** (~1 200–1 600 chars). Stays well under the 2 048 token embedding limit; each chunk stays focused on one concept. |
 | Overlap | **50 tokens** (~15 % of chunk) between adjacent chunks. Prevents context loss at boundaries — a sharp edge flagged by `rag-engineer`. |
@@ -299,7 +299,8 @@ via /admin/upload │    1. Save to Supabase Storage     │
                   │    3. Kick off Edge Function       │
                   │                                    │
                   │  Ingestion pipeline:               │
-                  │    1. Extract text (pdf.js)        │
+                  │    1. Extract text (Gemini 2.5 Pro │
+                  │       via Files API — native PDF)  │
                   │    2. Split → sections             │
                   │       → store knowledge_sections   │
                   │    3. Split sections → chunks      │

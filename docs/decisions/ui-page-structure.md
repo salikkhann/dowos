@@ -41,7 +41,7 @@ The mobile bottom nav item "Community" is renamed to **Campus**. It now owns all
 
 ── Study ──                          (see education-tab.md)
   MCQ Solver         [/education/mcq]
-  Viva Bot           [/education/viva]       🔒 Pro — module → subject. Anki Mode (Free) is a mode inside this entry, not a separate nav item (/education/viva/anki)
+  Viva Bot           [/education/viva]       🔒 Pro — module → subject. Browse Q&A (Free) also here at /education/viva/browse
   Progress           [/education/progress]
 
 ── Campus ──                         ← replaces "Explore" section
@@ -482,7 +482,7 @@ src/app/
 │   │   ├── mcq/…
 │   │   ├── viva/…                  ← module → subject picker (shared)
 │   │   │   ├── session/…           ← scored Viva Bot session (Pro)
-│   │   │   └── anki/…              ← flashcard tap-to-reveal drill (Free)
+│   │   │   └── browse/…            ← Browse Q&A — see questions + answers (Free)
 │   │   └── progress/…
 │   ├── ai/
 │   │   └── page.tsx                ← chat screen (§4)

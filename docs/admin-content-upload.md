@@ -197,7 +197,7 @@ That's it. You don't need to worry about how the text gets split up or indexed �
 
 You don't need to understand this to upload content. But here's the short version of what the system does in the background:
 
-1. **Text extraction.** The system reads the PDF using the best available model to pull out all the text with maximum accuracy — keeping the structure (headings, paragraphs, tables) intact. This step uses a top-tier vision/document model regardless of cost because getting the text right at this stage is critical. Everything downstream depends on it.
+1. **Text extraction.** The system sends the PDF to **Gemini 2.5 Pro** via the Google Files API, which reads it natively — no intermediate OCR step. It pulls out all the text while keeping the structure (headings, paragraphs, tables) intact. Gemini 2.5 Pro handles medical textbook layouts (dense tables, multi-column, diagrams with labels) better than any other model in our vendor stack. Everything downstream depends on this step.
 2. **Splitting.** The text gets divided into small, focused segments — roughly one concept per segment. Think of it like cutting a textbook into individual note cards, each covering one idea.
 3. **Q&A generation.** For each segment, the system automatically generates 2–3 practice Q&A pairs (like mini-flashcards). These show up in the MCQ and drill flows.
 4. **Indexing.** Each segment gets a "fingerprint" (called an embedding) that lets the AI find it when a student asks a related question. This is how the AI Tutor knows which part of the textbook to reference.
@@ -214,7 +214,7 @@ The whole process takes 2–15 minutes depending on file size and complexity. Yo
 
 A Viva Sheet is the source material the Viva Bot uses to run a mock viva on a topic. Each sheet covers **one subtopic** (e.g. "Coronary Circulation"). It contains: the questions the bot can ask, a model answer for each, and difficulty tags so the bot can adapt.
 
-**Note:** In the app, Viva Bot is organised **module → subject → subtopic**. Students first pick a module (e.g. Cardiovascular), then a subject within it (e.g. Anatomy), then a subtopic (e.g. Coronary Circulation). This means every subtopic must be tagged with both its module and subject — the taxonomy must be set up first (see §0). The same questions also appear in **Anki mode** (a flashcard-style view students can use to self-study without doing a full viva session). Make sure model answers are clear and complete — they show up in Anki mode as the "answer" side of the card.
+**Note:** In the app, Viva Bot is organised **module → subject → subtopic**. Students first pick a module (e.g. Cardiovascular), then a subject within it (e.g. Anatomy), then a subtopic (e.g. Coronary Circulation). This means every subtopic must be tagged with both its module and subject — the taxonomy must be set up first (see §0). The same questions also appear in **Browse Q&A** (a list view where students can see each question and expand it to read the model answer). Make sure model answers are clear and complete — they show up in Browse Q&A as the expanded answer.
 
 ### 3.2 The format — Google Sheet
 
@@ -278,7 +278,7 @@ Aim for **10–15 questions per subtopic** at launch. The Viva Bot caps a sessio
 |---|---|---|---|---|
 | MCQs | `.csv` | Admin → Content → MCQ Upload | module_id, subject_id, subtopic_id | `options` and `topic_tags` use pipes not commas. `correct_answer` uppercase A–E. Upload textbooks first (citation Edge Function needs them). Run explanation-fix Edge Function after upload to polish explanations (§1.8). |
 | Textbooks / Slides | `.pdf` | Admin → Content → Textbook Upload | Module, Subject, Subtopic (optional) | No CSV — just the PDF + dropdowns. Upload these **before** MCQs. |
-| Viva Sheets | `.csv` (from Google Sheet) | Admin → Content → Viva Sheet Upload | Module, Subject, Subtopic | `key_points` pipes not commas; difficulty 1–5. Model answers show in Anki mode too — write them clearly. |
+| Viva Sheets | `.csv` (from Google Sheet) | Admin → Content → Viva Sheet Upload | Module, Subject, Subtopic | `key_points` pipes not commas; difficulty 1–5. Model answers show in Browse Q&A too — write them clearly. |
 
 ---
 
