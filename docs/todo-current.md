@@ -82,7 +82,7 @@ Tick items off as you go. Re-create when the list drains.
 
 ### 2C – Timetable, Attendance & Dashboard Widgets (Days 12–14)
 - [ ] Write Supabase migrations: `timetable_entries`, `attendance`
-- [ ] Build timetable week-view component (Mon–Fri, color-coded by module)
+- [ ] Build timetable week-view component (Mon–Sat, color-coded by subject)
 - [ ] Add viva toggle + roll-number display on timetable
 - [ ] Build attendance check-in button + per-module % breakdown
 - [ ] Build runway calculator card (% attendance vs required threshold)

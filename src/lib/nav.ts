@@ -18,6 +18,7 @@ import {
   Utensils,
   ShoppingBag,
   Heart,
+  User,
 } from "lucide-react";
 
 /**
@@ -60,7 +61,7 @@ export const MOBILE_NAV_ITEMS = [
   {
     label: "Maps",
     href: "/maps",
-    icon: BarChart3, // Placeholder, will be Map icon but using BarChart for now
+    icon: Map,
     requiresAuth: true,
     requiresAdmin: false,
     requiresPro: false,
@@ -197,7 +198,7 @@ export const SIDEBAR_SECTIONS = [
       {
         label: "Profile",
         href: "/profile",
-        icon: Home, // Placeholder
+        icon: User,
         requiresAuth: true,
         requiresAdmin: false,
         requiresPro: false,
@@ -243,7 +244,7 @@ export const AVATAR_MENU_ITEMS = [
   {
     label: "Profile",
     href: "/profile",
-    icon: Home,
+    icon: User,
   },
   {
     label: "Settings",
