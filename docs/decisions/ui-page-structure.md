@@ -67,9 +67,18 @@ The first screen after login. A single scrolling page of widgets. No tabs, no su
 
 ### 3.1 Widget stack (top → bottom)
 
+The greeting is time-aware and uses the student's **first name only** (warmer, shorter on mobile). Time ranges are Asia/Karachi (UTC+5). Full greeting spec in `profile-card-ux.md` §3.1.
+
+| Time (IST) | Text |
+|---|---|
+| 04:00 – 11:59 | Good morning, [First name] |
+| 12:00 – 16:59 | Good afternoon, [First name] |
+| 17:00 – 20:59 | Good evening, [First name] |
+| 21:00 – 03:59 | Good night, [First name] |
+
 ```
 ┌─────────────────────────────────────┐
-│  Good morning, [Name] ☀️            │  ← greeting, changes with time of day
+│  Good morning, [First name]         │  ← time-aware greeting (see table above)
 │  Batch 3 · Lab Group B              │  ← from user profile
 ├─────────────────────────────────────┤
 │                                     │
@@ -404,17 +413,32 @@ Students never see announcements that aren't targeted at them. An Anatomy module
 
 ## 10. Profile page (`/profile`)
 
-Reached from: mobile avatar tap → bottom sheet → "Profile" link. Desktop sidebar → "Profile".
+Reached from: mobile avatar tap → bottom sheet → "Profile" link. Desktop sidebar avatar mini-card or "Profile" link.
+
+Full spec for the glassmorphic student card and all UX conventions lives in `profile-card-ux.md`. This section is the page-level wireframe.
 
 ```
 ┌─────────────────────────────────────┐
 │  ← back    My Profile               │
 ├─────────────────────────────────────┤
 │                                     │
-│       [Avatar photo]                │  ← uploaded Dow ID photo
-│       [Name]                        │
-│       Batch 3 · Roll 12345          │
+│  ┌─── GLASSMORPHIC STUDENT CARD ──┐ │  ← see profile-card-ux.md §2
+│  │  bg white/80 · blur(10px)      │ │     border Gold (Pro) or Navy-200 (Free)
+│  │  border white/30               │ │     shadow tinted Gold if Pro
+│  │                                │ │
+│  │   ╭──────╮  [Name]            │ │  ← 72 px avatar circle
+│  │   │ 📷  │  Batch 3            │ │     border 3px Gold (Pro) / Navy-200 (Free)
+│  │   │      │  Roll 12345        │ │     initials placeholder if no photo
+│  │   ╰──────╯                    │ │
+│  │                                │ │
+│  │   📚 Anatomy · 💰 240 Cr     │ │  ← current module (Teal) + credits (Mono)
+│  │                                │ │
+│  │   [ ★ Pro ]  or  [Upgrade →]  │ │  ← Gold badge or Teal upgrade CTA
+│  └────────────────────────────────┘ │
 │                                     │
+│  [+ Add photo]  or  [Change photo]  │  ← opens bottom sheet / modal
+│                                     │     with "Take photo" + "Choose from library"
+│                                     │     → client-side circular crop → upload
 │  ┌─ Dow ID Status ──────────────┐   │
 │  │  🟡 Pending approval        │   │  ← colour-coded status badge
 │  │  Uploaded 3 days ago        │   │     Green = approved
@@ -428,16 +452,15 @@ Reached from: mobile avatar tap → bottom sheet → "Profile" link. Desktop sid
 │  │  Learning Style  Visual     │   │  ← from onboarding, editable
 │  └──────────────────────────────┘   │
 │                                     │
-│  ┌─ Pro Status ─────────────────┐   │
-│  │  Free tier                  │   │  ← or "Pro · expires DD/MM/YYYY"
-│  │  [Upgrade to Pro →]         │   │  ← takes to upgrade/payment flow
-│  └──────────────────────────────┘   │
-│                                     │
 │  [Logout]                           │
 └─────────────────────────────────────┘
 ```
 
-Minimal. No editing inline — account details (roll number, batch) are set during onboarding and not user-editable after that. Learning style is the one editable field (affects AI Tutor tone). Dow ID re-upload is available if status is rejected.
+**Key changes from previous wireframe:**
+- The plain avatar + name block is replaced by the full glassmorphic card (Gold-bordered if Pro).
+- The separate "Pro Status" section is removed — Pro/Free status is now shown **inside** the card (badge or upgrade CTA). This reduces vertical scroll and keeps the identity + subscription status in one visual unit.
+- A `+ Add photo` / `Change photo` affordance appears directly below the card. The photo here is a **separate selfie** from the Dow ID photo — students can update it any time. See `profile-card-ux.md` §2.4 for the upload flow.
+- Account details and Dow ID status sections remain unchanged below.
 
 ---
 

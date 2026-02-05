@@ -73,6 +73,11 @@ The sidebar has two sections: **Main** (always visible) and **Study** (the Educa
 │  📚  Marketplace        [/campus/marketplace]    ← Phase 2
 │  📍  Maps               [/maps]
 │                                 │
+│  ── Identity ──                 │  ← avatar mini-card (see profile-card-ux.md §2.5)
+│  ╭────╮  [Name]                │     48 px avatar circle
+│  │ 📷 │  ★ Pro  (or nothing)  │     Gold ring if Pro, Navy-200 if Free
+│  ╰────╯                        │     Taps → /profile
+│                                 │
 │  ── System ──                   │  ← desktop-only extras
 │  ⚙️  Settings           [/settings]
 │  👤  Profile            [/profile]
@@ -244,6 +249,7 @@ The layout shell is Phase 2 work (Days 10–14). It's the first thing that ships
 
 - `docs/decisions/education-tab.md` — Education sub-feature list (defines what "Study" section contains)
 - `docs/decisions/maps-platform.md` — maps layout needs (horizontal space)
+- `docs/decisions/profile-card-ux.md` — sidebar avatar mini-card spec, glassmorphic card full spec
 - `docs/4_DESIGN_SYSTEM.md` — design tokens, component primitives
 - `docs/roadmap-day-by-day.md` — Phase 2 scope (Days 10–16)
 - Skills consulted: `nextjs-app-router-patterns`, `react-patterns`, `tailwind-design-system`

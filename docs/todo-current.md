@@ -30,6 +30,7 @@ Tick items off as you go. Update or re-create this file when the list drains.
 - [x] **Education tab structure:** Cards grid landing, MCQ module-picker → source toggle, Phase 2 card slots. Write `docs/decisions/education-tab.md`
 - [x] **Mobile vs Web UI:** One component tree, two layout wrappers. 5-item mobile bottom nav; desktop sidebar expands Study + Campus sections flat. Config-driven nav. Write `docs/decisions/mobile-web-ui.md`
 - [x] **All-pages UI structure:** Dashboard widgets (exam countdown, timetable mini + tap-to-mark, attendance warning, announcements, prayers, L&F), Campus tab (DowEats/Merch/Marketplace coming-soon + L&F + Prayers), Prayer Times page (azan calc + masjid schedules + qibla + daily verse), Announcements (audience-targeted, priority-layered), Profile, AI Chat layout, Maps tab switcher, full route tree. Write `docs/decisions/ui-page-structure.md`
+- [x] **Profile card + UX improvements:** Glassmorphic student card (Gold if Pro, selfie upload, batch + roll + module + credits), sidebar avatar mini-card, time-aware dashboard greeting, skeleton-first loading convention, transition timing, touch targets, focus states, contrast rules, reduced-motion. Write `docs/decisions/profile-card-ux.md`
 - [x] Create `docs/decisions/` folder (one doc per decision, all decisions live here going forward)
 
 ## Phase 2 – Core Shell & Admin (Days 10–14, early start)
