@@ -166,13 +166,14 @@ CREATE POLICY "No student delete to app_events"
 
 ---
 
-## Migration 3: Modules & Subjects Lookup Tables
+## Migration 3: Modules & Subjects Lookup Tables (Dow Medical College Curriculum)
 
 **File:** `src/migrations/00004_modules_subjects.sql`
-**Purpose:** Define academic structure (modules, subjects, subtopics)
+**Purpose:** Define Dow Medical College academic structure (years 1-5, all subjects per year)
 **Tables:** `modules`, `subjects`, `subtopics`
-**Seed Data:** 5 batches × 10 subjects per batch
+**Seed Data:** 5 years × curriculum-specific subjects (Y1: 19, Y2: 20, Y3: 37, Y4: 30, Y5: 24)
 **RLS:** Read-only for students, no writes
+**Subtopics:** Empty now - will be seeded later when detailed topic mappings are provided
 
 ```sql
 -- Migration: 00004 - Modules and Subjects Lookup Tables
@@ -180,11 +181,11 @@ CREATE POLICY "No student delete to app_events"
 -- Reference: DowOS org structure (Anatomy, Physiology, Pharmacology, etc. across 5 batches)
 -- Date: 2026-02-06
 
--- Create modules table (e.g., Batch 1, Batch 2, etc.)
+-- Create modules table (batches/years for Dow Medical College)
 CREATE TABLE IF NOT EXISTS modules (
   id BIGSERIAL PRIMARY KEY,
-  name TEXT NOT NULL UNIQUE, -- e.g., "Batch 1", "Batch 2"
-  code TEXT NOT NULL UNIQUE, -- e.g., "B1", "B2"
+  name TEXT NOT NULL UNIQUE, -- e.g., "Year 1", "Year 2"
+  code TEXT NOT NULL UNIQUE, -- e.g., "Y1", "Y2"
   description TEXT,
   order_index INTEGER DEFAULT 0, -- Sort order
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -192,19 +193,19 @@ CREATE TABLE IF NOT EXISTS modules (
 );
 
 INSERT INTO modules (name, code, description, order_index) VALUES
-  ('Batch 1 (Year 1)', 'B1', 'First year medical students', 1),
-  ('Batch 2 (Year 2)', 'B2', 'Second year medical students', 2),
-  ('Batch 3 (Year 3)', 'B3', 'Third year medical students', 3),
-  ('Batch 4 (Year 4)', 'B4', 'Fourth year medical students', 4),
-  ('Batch 5 (Year 5)', 'B5', 'Fifth year medical students', 5)
+  ('Year 1', 'Y1', 'First year medical students - Preclinical', 1),
+  ('Year 2', 'Y2', 'Second year medical students - Preclinical', 2),
+  ('Year 3', 'Y3', 'Third year medical students - Clinical', 3),
+  ('Year 4', 'Y4', 'Fourth year medical students - Clinical', 4),
+  ('Year 5', 'Y5', 'Fifth year medical students - Final', 5)
 ON CONFLICT (code) DO NOTHING;
 
--- Create subjects table (e.g., Anatomy, Physiology, etc.)
+-- Create subjects table (Dow Medical College curriculum)
 CREATE TABLE IF NOT EXISTS subjects (
   id BIGSERIAL PRIMARY KEY,
   module_id BIGINT NOT NULL REFERENCES modules(id) ON DELETE CASCADE,
-  name TEXT NOT NULL, -- e.g., "Anatomy", "Physiology"
-  code TEXT NOT NULL, -- e.g., "ANAT", "PHYS"
+  name TEXT NOT NULL, -- e.g., "Foundation Module", "Blood Module"
+  code TEXT NOT NULL, -- e.g., "FND1", "HEM1"
   description TEXT,
   order_index INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -213,24 +214,201 @@ CREATE TABLE IF NOT EXISTS subjects (
   UNIQUE(module_id, code)
 );
 
--- Seed common subjects for all batches
+-- Seed subjects for Year 1 (Preclinical)
 INSERT INTO subjects (module_id, name, code, description, order_index)
 SELECT m.id, s.name, s.code, s.description, s.order_index
 FROM modules m
 CROSS JOIN (
   VALUES
-    ('Anatomy', 'ANAT', 'Study of body structure', 1),
-    ('Physiology', 'PHYS', 'Study of body functions', 2),
-    ('Biochemistry', 'BIOC', 'Study of chemical processes in living organisms', 3),
-    ('Pharmacology', 'PHARM', 'Study of drugs and their effects', 4),
-    ('Pathology', 'PATH', 'Study of diseases', 5),
-    ('Microbiology', 'MICRO', 'Study of microorganisms', 6),
-    ('Forensic Medicine', 'FOREN', 'Forensic medical investigations', 7),
-    ('Community Medicine', 'COMM', 'Public health and community care', 8),
-    ('Surgery', 'SURG', 'Surgical specialties', 9),
-    ('Medicine', 'MED', 'Internal medicine specialties', 10)
+    ('Foundation Module', 'FND1', 'Introduction to medical sciences', 1),
+    ('Blood Module', 'HEM1', 'Hematology and blood disorders', 2),
+    ('Locomotor Module', 'LCM1', 'Musculoskeletal system', 3),
+    ('Respiratory System', 'RSP1', 'Respiratory physiology and pathology', 4),
+    ('Cardiovascular System', 'CVS1', 'Heart and circulatory system', 5),
+    ('Gross Anatomy', 'ANAT_G', 'Gross anatomical structures', 6),
+    ('Embryology', 'EMBY', 'Embryological development', 7),
+    ('Histology', 'HISTO', 'Microscopic tissue structure', 8),
+    ('Physiology', 'PHYS', 'Normal body functions', 9),
+    ('Pathology', 'PATH', 'Disease processes', 10),
+    ('Microbiology', 'MICRO', 'Microorganisms and infections', 11),
+    ('Biochemistry', 'BIOC', 'Chemical processes in living organisms', 12),
+    ('Pharmacology', 'PHARM', 'Drugs and their effects', 13),
+    ('Community Medicine', 'COMM', 'Public health and epidemiology', 14),
+    ('Radiology', 'RADIO', 'Medical imaging', 15),
+    ('Behavioural Sciences', 'BEHAV', 'Psychology and behavior', 16),
+    ('Medicine', 'MED', 'Internal medicine', 17),
+    ('Gynecology', 'GYNE', 'Gynecological disorders', 18),
+    ('Skills Lab', 'SKILL', 'Practical clinical skills', 19)
 ) AS s(name, code, description, order_index)
-WHERE NOT EXISTS (
+WHERE m.code = 'Y1'
+AND NOT EXISTS (
+  SELECT 1 FROM subjects
+  WHERE subjects.module_id = m.id
+    AND subjects.code = s.code
+);
+
+-- Seed subjects for Year 2 (Preclinical)
+INSERT INTO subjects (module_id, name, code, description, order_index)
+SELECT m.id, s.name, s.code, s.description, s.order_index
+FROM modules m
+CROSS JOIN (
+  VALUES
+    ('Neurosciences', 'NEU1', 'Nervous system and neurology', 1),
+    ('Head & Neck and Special Senses', 'HNS1', 'Head, neck, and sensory systems', 2),
+    ('Endocrinology', 'END1', 'Endocrine system and hormones', 3),
+    ('GIT and Liver', 'GIL1', 'Gastrointestinal and hepatic systems', 4),
+    ('Renal and Excretory System', 'EXC1', 'Urinary and renal physiology', 5),
+    ('Reproductive System', 'REP1', 'Male and female reproductive systems', 6),
+    ('Gross Anatomy', 'ANAT_G', 'Gross anatomical structures', 7),
+    ('Embryology', 'EMBY', 'Embryological development', 8),
+    ('Histology', 'HISTO', 'Microscopic tissue structure', 9),
+    ('Physiology', 'PHYS', 'Normal body functions', 10),
+    ('Pathology', 'PATH', 'Disease processes', 11),
+    ('Microbiology', 'MICRO', 'Microorganisms and infections', 12),
+    ('Biochemistry', 'BIOC', 'Chemical processes in living organisms', 13),
+    ('Pharmacology', 'PHARM', 'Drugs and their effects', 14),
+    ('Community Medicine', 'COMM', 'Public health and epidemiology', 15),
+    ('Radiology', 'RADIO', 'Medical imaging', 16),
+    ('Behavioural Sciences', 'BEHAV', 'Psychology and behavior', 17),
+    ('Medicine', 'MED', 'Internal medicine', 18),
+    ('Gynecology', 'GYNE', 'Gynecological disorders', 19),
+    ('Skills Lab', 'SKILL', 'Practical clinical skills', 20)
+) AS s(name, code, description, order_index)
+WHERE m.code = 'Y2'
+AND NOT EXISTS (
+  SELECT 1 FROM subjects
+  WHERE subjects.module_id = m.id
+    AND subjects.code = s.code
+);
+
+-- Seed subjects for Year 3 (Clinical)
+INSERT INTO subjects (module_id, name, code, description, order_index)
+SELECT m.id, s.name, s.code, s.description, s.order_index
+FROM modules m
+CROSS JOIN (
+  VALUES
+    ('Foundation Module', 'FND2', 'Advanced foundational concepts', 1),
+    ('Infectious Diseases', 'IDD1', 'Infectious disease management', 2),
+    ('Hematology', 'HEM2', 'Blood disorders and hematology', 3),
+    ('Respiratory System', 'RSP2', 'Clinical respiratory pathology', 4),
+    ('Cardiovascular System', 'CVS2', 'Clinical cardiology', 5),
+    ('GIT and Liver', 'GIL2', 'Gastrointestinal and hepatic clinical', 6),
+    ('Renal and Excretory System', 'EXC2', 'Renal clinical pathology', 7),
+    ('Endocrinology', 'END2', 'Endocrine disorders', 8),
+    ('Pathology', 'PATH', 'Disease processes', 9),
+    ('Physiology', 'PHYS', 'Normal body functions', 10),
+    ('Pharmacology', 'PHARM', 'Drugs and their effects', 11),
+    ('Medicine', 'MED', 'Internal medicine', 12),
+    ('Orthopedics', 'ORT', 'Musculoskeletal disorders', 13),
+    ('Surgery', 'SURG', 'Surgical specialties', 14),
+    ('Pediatrics', 'PEDS', 'Child health and diseases', 15),
+    ('Gastroenterology', 'GAST', 'Digestive system disorders', 16),
+    ('Pulmonology', 'PULM', 'Lung and respiratory diseases', 17),
+    ('Cardiology', 'CARD', 'Heart and vascular diseases', 18),
+    ('ENT', 'ENT', 'Ear, Nose, Throat disorders', 19),
+    ('Ophthalmology', 'OPHT', 'Eye and vision disorders', 20),
+    ('Neurology', 'NEUR', 'Neurological disorders', 21),
+    ('Psychiatry', 'PSYCH', 'Mental health and psychiatric disorders', 22),
+    ('Neurosurgery', 'NEURO_SURG', 'Surgical neurology', 23),
+    ('Physical Medicine and Rehabilitation', 'PMR', 'Rehabilitation medicine', 24),
+    ('General Surgery', 'GEN_SURG', 'General surgical procedures', 25),
+    ('Gynecology & Obstetrics', 'GYNE_OBS', 'Womens health', 26),
+    ('Biostatistics', 'BIOSTAT', 'Medical statistics', 27),
+    ('Research', 'RESEARCH', 'Medical research methods', 28),
+    ('Forensic Medicine', 'FOREN', 'Forensic investigations', 29),
+    ('Community Medicine', 'COMM', 'Public health and epidemiology', 30),
+    ('Radiology', 'RADIO', 'Medical imaging', 31),
+    ('Behavioural Sciences', 'BEHAV', 'Psychology and behavior', 32),
+    ('Anatomy', 'ANAT', 'Advanced anatomical knowledge', 33),
+    ('Biochemistry', 'BIOC', 'Advanced biochemistry', 34),
+    ('Dermatology', 'DERM', 'Skin disorders', 35),
+    ('Burns', 'BURNS', 'Burn management', 36),
+    ('Plastic Surgery', 'PLAST_SURG', 'Plastic and reconstructive surgery', 37)
+) AS s(name, code, description, order_index)
+WHERE m.code = 'Y3'
+AND NOT EXISTS (
+  SELECT 1 FROM subjects
+  WHERE subjects.module_id = m.id
+    AND subjects.code = s.code
+);
+
+-- Seed subjects for Year 4 (Clinical)
+INSERT INTO subjects (module_id, name, code, description, order_index)
+SELECT m.id, s.name, s.code, s.description, s.order_index
+FROM modules m
+CROSS JOIN (
+  VALUES
+    ('Musculoskeletal System/Orthopedic', 'ORT2', 'Orthopedic clinical practice', 1),
+    ('Reproductive System', 'REP2', 'Reproductive clinical management', 2),
+    ('Neurosciences', 'NEU2', 'Advanced neuroscience', 3),
+    ('Clinical Genetics', 'GEN', 'Genetic disorders and counseling', 4),
+    ('Dermatology/Plastic Surgery/Burns', 'DERM_PLAST', 'Dermatological and plastic procedures', 5),
+    ('Otorhinolaryngology/ENT', 'ENT2', 'Ear, Nose, Throat clinical', 6),
+    ('Ophthalmology', 'EYE', 'Eye disorders and management', 7),
+    ('Pathology', 'PATH', 'Disease processes', 8),
+    ('Physiology', 'PHYS', 'Normal body functions', 9),
+    ('Pharmacology', 'PHARM', 'Drugs and their effects', 10),
+    ('Medicine', 'MED', 'Internal medicine', 11),
+    ('Pediatrics', 'PEDS', 'Child health and diseases', 12),
+    ('Surgery', 'SURG', 'Surgical specialties', 13),
+    ('Gastroenterology', 'GAST', 'Digestive system disorders', 14),
+    ('Pulmonology', 'PULM', 'Lung and respiratory diseases', 15),
+    ('Cardiology', 'CARD', 'Heart and vascular diseases', 16),
+    ('Neurology', 'NEUR', 'Neurological disorders', 17),
+    ('Psychiatry', 'PSYCH', 'Mental health and psychiatric disorders', 18),
+    ('Neurosurgery', 'NEURO_SURG', 'Surgical neurology', 19),
+    ('Physical Medicine and Rehabilitation', 'PMR', 'Rehabilitation medicine', 20),
+    ('General Surgery', 'GEN_SURG', 'General surgical procedures', 21),
+    ('Gynecology & Obstetrics', 'GYNE_OBS', 'Womens health', 22),
+    ('Biostatistics', 'BIOSTAT', 'Medical statistics', 23),
+    ('Research', 'RESEARCH', 'Medical research methods', 24),
+    ('Forensic Medicine', 'FOREN', 'Forensic investigations', 25),
+    ('Community Medicine', 'COMM', 'Public health and epidemiology', 26),
+    ('Radiology', 'RADIO', 'Medical imaging', 27),
+    ('Behavioural Sciences', 'BEHAV', 'Psychology and behavior', 28),
+    ('Anatomy', 'ANAT', 'Advanced anatomical knowledge', 29),
+    ('Biochemistry', 'BIOC', 'Advanced biochemistry', 30)
+) AS s(name, code, description, order_index)
+WHERE m.code = 'Y4'
+AND NOT EXISTS (
+  SELECT 1 FROM subjects
+  WHERE subjects.module_id = m.id
+    AND subjects.code = s.code
+);
+
+-- Seed subjects for Year 5 (Final)
+INSERT INTO subjects (module_id, name, code, description, order_index)
+SELECT m.id, s.name, s.code, s.description, s.order_index
+FROM modules m
+CROSS JOIN (
+  VALUES
+    ('Medicine', 'MED', 'Internal medicine', 1),
+    ('Pediatrics', 'PEDS', 'Child health and diseases', 2),
+    ('Surgery', 'SURG', 'Surgical specialties', 3),
+    ('Gynecology', 'GYNE', 'Gynecological disorders', 4),
+    ('Obstetrics', 'OBS', 'Obstetric care', 5),
+    ('Pathology', 'PATH', 'Disease processes', 6),
+    ('Pharmacology', 'PHARM', 'Drugs and their effects', 7),
+    ('Radiology', 'RADIO', 'Medical imaging', 8),
+    ('Forensic Medicine', 'FOREN', 'Forensic investigations', 9),
+    ('Community Medicine', 'COMM', 'Public health and epidemiology', 10),
+    ('Orthopedics', 'ORT', 'Musculoskeletal disorders', 11),
+    ('Gastroenterology', 'GAST', 'Digestive system disorders', 12),
+    ('Pulmonology', 'PULM', 'Lung and respiratory diseases', 13),
+    ('Cardiology', 'CARD', 'Heart and vascular diseases', 14),
+    ('ENT', 'ENT', 'Ear, Nose, Throat disorders', 15),
+    ('Ophthalmology', 'OPHT', 'Eye and vision disorders', 16),
+    ('Neurology', 'NEUR', 'Neurological disorders', 17),
+    ('Psychiatry', 'PSYCH', 'Mental health and psychiatric disorders', 18),
+    ('Neurosurgery', 'NEURO_SURG', 'Surgical neurology', 19),
+    ('Physical Medicine and Rehabilitation', 'PMR', 'Rehabilitation medicine', 20),
+    ('General Surgery', 'GEN_SURG', 'General surgical procedures', 21),
+    ('Biostatistics', 'BIOSTAT', 'Medical statistics', 22),
+    ('Research', 'RESEARCH', 'Medical research methods', 23),
+    ('Behavioral Sciences', 'BEHAV', 'Psychology and behavior', 24)
+) AS s(name, code, description, order_index)
+WHERE m.code = 'Y5'
+AND NOT EXISTS (
   SELECT 1 FROM subjects
   WHERE subjects.module_id = m.id
     AND subjects.code = s.code
@@ -343,9 +521,9 @@ After applying all 3 migrations in Supabase, verify:
 
 - [ ] `api_usage_log` table exists with 4 indexes
 - [ ] `app_events` table exists with 4 indexes
-- [ ] `modules` table has 5 rows (B1-B5)
-- [ ] `subjects` table has 50 rows (5 batches × 10 subjects)
-- [ ] `subtopics` table exists (empty, ready for seeding)
+- [ ] `modules` table has 5 rows (Y1-Y5)
+- [ ] `subjects` table has 180+ rows (Y1: 19 subjects, Y2: 20 subjects, Y3: 37 subjects, Y4: 30 subjects, Y5: 24 subjects = 130 total)
+- [ ] `subtopics` table exists (empty, ready for seeding with specific topics per subject later)
 - [ ] All RLS policies applied correctly
 - [ ] All triggers created
 - [ ] No errors in SQL execution
