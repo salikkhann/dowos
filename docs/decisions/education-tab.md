@@ -24,11 +24,12 @@ The PRD listed three features under Education (MCQ, Viva, Progress). Product dis
 | Feature | Phase | Notes |
 |---|---|---|
 | MCQ Solver | 1 | Two sources: Past Papers (high-yield, from past-paper CSV/JSON uploads) + External (other relevant questions). Module picker → source toggle. |
-| Viva Bot | 1 | Pro-gated. Voice Q&A drill. |
+| Viva Bot | 1 | Pro-gated. Voice Q&A drill. Organised module → subject → subtopic. |
+| Anki Mode | 1 | Free for all. Flashcard-style self-study using the same viva questions + model answers. Students can skip the bot and just learn at their own pace. See §4.2. |
 | Progress Matrix | 1 | Mastery heatmap per module/subject/subtopic. |
 | Saved Questions | 2 | Student bookmarks questions they want to revisit. |
 | Quick Summaries | 2 | Short AI-generated notes on a topic. |
-| Flashcards | 2 | Spaced-repetition style card drill. |
+| Flashcards | 2 | Spaced-repetition style card drill (broader than Anki mode — covers MCQs + summaries too). |
 
 **Questions this doc resolves:**
 
@@ -60,6 +61,12 @@ The student taps "Education" in the nav. They land on a **cards grid** — a ver
 │  │  🎤  Viva Bot               │    │
 │  │  Practice with voice Q&A    │    │
 │  │  [Start Session →] 🔒 Pro  │    │  ← Pro paywall CTA if free
+│  └─────────────────────────────┘    │
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │  🃏  Anki Mode              │    │
+│  │  Learn Q&A at your pace     │    │
+│  │  [Start Learning →]        │    │  ← free for all, no Pro gate
 │  └─────────────────────────────┘    │
 │                                     │
 │  ┌─────────────────────────────┐    │
@@ -109,7 +116,17 @@ src/app/(app)/education/
 │   └── drill/
 │       └── page.tsx          ← Active drill screen (question → answer → next)
 ├── viva/
-│   └── page.tsx              ← Viva Bot entry (module/topic picker, then session)
+│   ├── page.tsx              ← Viva entry: module picker
+│   ├── [module_id]/
+│   │   └── page.tsx          ← Subject picker within module
+│   └── session/
+│       └── page.tsx          ← Active Viva Bot session (voice Q&A)
+├── anki/
+│   ├── page.tsx              ← Anki entry: module picker (same as viva)
+│   ├── [module_id]/
+│   │   └── page.tsx          ← Subject picker within module
+│   └── [subtopic_id]/
+│       └── page.tsx          ← Flashcard drill (question → tap to reveal answer → next)
 ├── progress/
 │   └── page.tsx              ← Progress Matrix heatmap
 ├── saved/                    ← Phase 2
@@ -122,7 +139,121 @@ src/app/(app)/education/
 
 `education/page.tsx` is a Server Component. It fetches the card metadata (e.g. saved-question count, flashcards-due count) in parallel via Supabase and renders the grid. Each card is a simple `<Link>` — no client-side state needed on the landing screen.
 
-The drill screens (`mcq/drill`, `viva`) are `'use client'` components — they manage active session state (current question, score, timer).
+The drill screens (`mcq/drill`, `viva/session`, `anki/[subtopic_id]`) are `'use client'` components — they manage active session state (current question, score, timer).
+
+---
+
+## 4.1 Viva Bot — module → subject → subtopic navigation
+
+Viva Bot is organised in a three-level drill-down. This matches how students think about studying ("I need to practise Cardiology → Anatomy → Coronary Circulation") and how the content is tagged in the taxonomy.
+
+```
+Student taps "Viva Bot" card
+     │
+     ▼
+┌── Module Picker ──────────────────────┐
+│  Pick the module you're studying.     │
+│                                       │
+│    Cardiovascular   [→]               │
+│    Respiratory      [→]               │
+│    Renal            [→]               │
+│    …                                  │
+└──────────────┬────────────────────────┘
+               │  student taps "Cardiovascular"
+               ▼
+┌── Subject Picker ─────────────────────┐
+│  Pick the subject within Cardiovascular│
+│                                       │
+│    Anatomy          [→]   (12 topics) │  ← badge shows how many subtopics
+│    Physiology       [→]   (8 topics)  │     have viva content
+│    Pathology        [→]   (5 topics)  │
+│    …                                  │
+└──────────────┬────────────────────────┘
+               │  student taps "Anatomy"
+               ▼
+┌── Subtopic Picker ────────────────────┐
+│  Pick the topic to practise.          │
+│                                       │
+│    Coronary Circulation  [→]          │  ← taps into /viva/session
+│    Aortic Arch           [→]          │     with module + subject + subtopic
+│    Heart Chambers        [→]          │     context passed as params
+│    …                                  │
+└───────────────────────────────────────┘
+```
+
+The subject and subtopic pickers only show entries that have **viva content uploaded**. If Azfar hasn't uploaded a viva sheet for "Heart Valves" yet, it doesn't appear in the list. No empty pages, no dead ends.
+
+---
+
+## 4.2 Anki Mode — self-study flashcards (free for all)
+
+Anki Mode uses the **exact same question + model answer data** as Viva Bot, but in a completely different interaction pattern. No voice. No scoring. No bot. Just: question on screen → tap to flip → see the answer → mark yourself (Got it / Need review) → next card.
+
+This is the free-tier path into viva-style content. Students who don't have Pro (or who just want to memorise before a viva) use Anki Mode. It's also useful for quick revision — 5 minutes of card flipping before an exam.
+
+### Navigation
+
+Identical to Viva Bot: module → subject → subtopic. Same three-level drill-down, same filtered lists (only subtopics with content show up).
+
+### The card drill
+
+```
+┌─────────────────────────────────────┐
+│  Coronary Circulation               │  ← breadcrumb: module > subject > subtopic
+│  Card 3 of 12                       │  ← progress counter
+├─────────────────────────────────────┤
+│                                     │
+│  Describe the blood supply          │  ← the question (same text Viva Bot
+│  to the myocardium.                 │     would ask out loud)
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │  [ Tap to reveal answer ]   │    │  ← large tap target, full width
+│  └─────────────────────────────┘    │
+│                                     │
+└─────────────────────────────────────┘
+
+           ── after tap ──
+
+┌─────────────────────────────────────┐
+│  Coronary Circulation               │
+│  Card 3 of 12                       │
+├─────────────────────────────────────┤
+│                                     │
+│  Describe the blood supply          │
+│  to the myocardium.                 │
+│                                     │
+│  ── Answer ─────────────────────    │  ← answer revealed (the model_answer
+│  The myocardium receives its        │     from the viva sheet — written
+│  blood supply from the left and     │     clearly by Azfar)
+│  right coronary arteries…           │
+│                                     │
+│  ── Key points ─────────────────    │  ← the key_points from the viva sheet,
+│  • Left & right coronary arteries   │     shown as bullet list so the student
+│  • Arise from aortic sinuses        │     can check themselves
+│  • Flow mainly in diastole          │
+│                                     │
+│  Did you get it?                    │
+│  [ ✓ Got it ]  [ ↻ Need review ]   │  ← self-assessment. "Got it" moves to
+│                                     │     next card. "Need review" pushes it
+└─────────────────────────────────────┘     to the back of the deck.
+```
+
+### How Anki Mode relates to Viva Bot
+
+| Aspect | Viva Bot | Anki Mode |
+|---|---|---|
+| Same questions? | ✓ Yes | ✓ Yes (same viva sheet data) |
+| Same model answers? | Bot uses them internally for scoring | Student sees them after tapping |
+| Voice? | ✓ Bot speaks questions, student speaks answers | ✗ Silent. Text only. |
+| Scoring? | ✓ 3-dimension scoring + adaptive difficulty | ✗ Self-assessed only (Got it / Need review) |
+| Pro gate? | ✓ Pro only | ✗ Free for all |
+| Progress tracked? | ✓ Full session report | ✓ Card completion % shown on subtopic card |
+
+### Why both exist
+
+Viva Bot is the **practice exam** — it simulates the real thing, scores you, adapts difficulty. It's high-value but high-friction (Pro gate, voice required, time commitment).
+
+Anki Mode is the **study tool** — low friction, quick, free. A student can flip 20 cards in 3 minutes while waiting for class. It's not a replacement for Viva Bot; it's the entry ramp. Students who get comfortable with the material in Anki Mode are more likely to attempt Viva Bot when the time comes.
 
 ---
 
@@ -201,12 +332,12 @@ All Education tab work lives in Phase 3 (Days 17–23). The landing screen and M
 
 | Day | Work item |
 |---|---|
-| 17 | Build `education/page.tsx` — the cards grid landing screen. Render Phase 1 cards (MCQ, Viva, Progress) as static `<Link>` cards. No badge logic yet — that comes with the data. |
+| 17 | Build `education/page.tsx` — the cards grid landing screen. Render Phase 1 cards (MCQ, Viva, Anki, Progress) as static `<Link>` cards. No badge logic yet — that comes with the data. |
 | 18–19 | Build MCQ Solver: module picker page, source toggle, question list, drill screen. Wire to `mcq_questions` + `past_paper_questions` tables (already seeded by admin). |
 | 20 | Build Progress Matrix page (heatmap). |
-| 21 | Build Viva Bot entry + session pages. Pro paywall gate on the card CTA. |
-| 22 | Wire live badges: saved-question count, cards-due count (Phase 2 data not yet seeded — badges hidden until count > 0, so no visual gap). |
-| 23 | Integration test: full Education tab flow on mobile (375 px) and desktop. Dark-mode check. |
+| 21 | Build Viva Bot entry: module → subject → subtopic navigation. Pro paywall gate on the card CTA. Build Viva Bot session page (voice Q&A, scored). |
+| 22 | Build Anki Mode: module → subject → subtopic navigation (reuses same picker components as Viva). Build flashcard drill screen (tap-to-reveal, Got it / Need review self-assessment). Wire to same viva sheet data. |
+| 23 | Wire live badges: saved-question count, cards-due count (Phase 2 data not yet seeded — badges hidden until count > 0, so no visual gap). Integration test: full Education tab flow on mobile (375 px) and desktop. Dark-mode check. |
 
 Phase 2 additions (Saved Questions, Quick Summaries, Flashcards) each add one card to the grid and one route subtree. No changes to the landing screen component — just one more item in the cards array.
 

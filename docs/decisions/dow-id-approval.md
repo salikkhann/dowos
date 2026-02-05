@@ -55,7 +55,9 @@ The status badge lives on the Profile page, below the glassmorphic card. It pers
 
 1. Ammaar taps **Approve**.
 2. `users.dow_id_status` → `approved`.
-3. Student gets FCM push: "Your Dow ID has been verified! ✓"
+3. Student gets **two notifications** (both fire in parallel, no user-visible delay):
+   - **FCM push:** "Your Dow ID has been verified! ✓"
+   - **Email** (to the student's registered email): see §3.4 below.
 4. Card disappears from the queue.
 
 No confirmation dialog needed — approvals are low-risk and reversible (admin can re-open a student's status if needed via a "Revoke" action on the Approved list).
@@ -84,6 +86,30 @@ Why are you rejecting this ID?
 ### 3.3 Re-upload after rejection
 
 The student taps **Re-upload**. The same onboarding upload flow fires: camera/library picker → upload to Storage (overwrites or creates a new version) → status resets to `pending`. A new card appears in the admin queue.
+
+### 3.4 Emails — verification confirmation + rejection notification
+
+DowOS sends transactional emails on two Dow ID events. These are **not** marketing emails — they are status notifications the student needs to act on or be aware of.
+
+| Trigger | Subject line | Body (summary) |
+|---|---|---|
+| **Approved** | "Your Dow ID has been verified ✓" | Welcome confirmation. Tells the student they now have full access to all DowOS features. One-liner: "Your Dow Medical College ID has been verified. You're all set." No further action needed. |
+| **Rejected** | "Action needed — your Dow ID upload" | Tells the student the upload was rejected. Includes the reason (same text shown in the app badge). Directs them to re-upload via the Profile page. |
+
+**Implementation:** Emails are sent via a Supabase Edge Function triggered by the same admin action that flips `dow_id_status`. The Edge Function calls the project's email provider (e.g. Resend or SendGrid — key in `.env.local`). Template is plain-text + simple HTML. No rich marketing layout needed.
+
+---
+
+## 3.5 Periodic email broadcasts (separate from Dow ID)
+
+The email infrastructure built here (Edge Function → email provider) is also the delivery channel for **project-wide announcements and feature updates** sent to all users periodically. These are one-off blasts (e.g. "New feature: Viva Bot is live", "App update v1.2"). They are:
+
+- Sent manually by Salik / Ammaar (not automated on a schedule).
+- Subject + body drafted in a simple admin form or Notion page before sending.
+- Opt-out link included in every email (legal requirement; preference stored in `user_preferences.email_notifications`).
+- Frequency target: ≤ 2 per month. Students won't unsubscribe if the signal-to-noise is high.
+
+The admin trigger for these broadcasts is a separate route (`/admin/emails/broadcast`) — it's not part of the Dow ID flow. But it reuses the same Edge Function + email provider wiring.
 
 ---
 

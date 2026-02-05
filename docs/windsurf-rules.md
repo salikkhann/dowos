@@ -126,7 +126,8 @@ box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
 
 ── Study ─────────────────
   MCQ Solver         /education/mcq
-  Viva Bot           /education/viva       [Pro gate]
+  Viva Bot           /education/viva       [Pro gate] module→subject→subtopic
+  Anki Mode          /education/anki       [Free]     same questions, flashcard drill
   Progress Matrix    /education/progress
 
 ── Campus ────────────────

@@ -39,11 +39,11 @@ The mobile bottom nav item "Community" is renamed to **Campus**. It now owns all
   Dashboard          [/dashboard]
   AI Tutor           [/ai]
 
-── Study ──                          (unchanged — see education-tab.md)
+── Study ──                          (see education-tab.md)
   MCQ Solver         [/education/mcq]
-  Viva Bot           [/education/viva]
+  Viva Bot           [/education/viva]       🔒 Pro — module → subject → subtopic
+  Anki Mode          [/education/anki]       Free — same questions, flashcard style
   Progress           [/education/progress]
-  …
 
 ── Campus ──                         ← replaces "Explore" section
   Lost & Found       [/campus/lost-found]
@@ -481,7 +481,8 @@ src/app/
 │   ├── education/                  ← see education-tab.md
 │   │   ├── page.tsx
 │   │   ├── mcq/…
-│   │   ├── viva/…
+│   │   ├── viva/…                  ← module → subject → subtopic → session (Pro)
+│   │   ├── anki/…                  ← module → subject → subtopic → flashcard drill (Free)
 │   │   └── progress/…
 │   ├── ai/
 │   │   └── page.tsx                ← chat screen (§4)
