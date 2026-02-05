@@ -84,7 +84,9 @@ team the tools they need to seed data before AI features are built.
 - **`docs/admin-content-upload.md`** — step-by-step guide for Azfar: how to format
   MCQ CSVs, tag questions with module/subject/subtopic/difficulty/high-yield, upload
   textbooks for RAG, create Viva sheets, and monitor ingestion status
-- Supabase migrations: `modules`, `subjects`, `timetable_entries`, `attendance`
+- Supabase migrations: `modules`, `subjects`, `timetable_entries`, `attendance`, `api_usage_log`, `app_events`
+- **Tooling setup (Day 10):** `.cursorrules` at project root (see `docs/cursor-guide.md`). Install + configure Sentry (`@sentry/nextjs`). Create Resend account, add `RESEND_API_KEY` to `.env.local` (use Resend default subdomain until custom domain is live). Write `src/lib/api-logger.ts` + `src/lib/api-rates.ts`.
+- Wire `app_events` logging into: login, logout, Dow ID upload, content upload flows
 
 ---
 
@@ -96,6 +98,7 @@ team has already seeded initial data via admin dashboard.
 - AI Tutor chat: text mode, Gemini streaming, RAG-backed context retrieval (using
   locked architecture from Phase 1), session + long-term memory (pgvector),
   rate-limit UI
+- Wire `api_usage_log` into every AI Tutor + MCQ Solver API call (Gemini, DeepSeek). Cost calculated server-side at log time via `logApiCall()` (see `decisions/analytics-logging.md`).
 - MCQ Solver: module → subject → subtopic drill, AI explanations, practice +
   review modes, high-yield filter
 - Supabase migrations: `chat_sessions`, `chat_messages`, `user_knowledge_base`,
@@ -110,9 +113,8 @@ team has already seeded initial data via admin dashboard.
 
 Complete the learning loop and close the progress-tracking circle.
 
-- Viva Bot: 3 difficulty modes, voice Q&A (using locked STT from Phase 1 →
-  Gemini → TTS), 50-point adaptive scoring, session report. Orchestration approach
-  (LangGraph or state machine) applied per Day 8 decision.
+- Viva Bot: 3 examiner modes (Strict / Friendly / Standard), greeting on session start, voice Q&A (Grosto STT → Gemini → Google Cloud TTS), 50-point adaptive scoring, session report. State-machine orchestration (5 states: GREET → ASK → EVALUATE → FOLLOWUP → SCORE) per Day 8 decision.
+- Wire `api_usage_log` into Viva Bot + STT + TTS calls.
 - Progress Matrix: module/subject/subtopic mastery %, color-coded heatmap,
   annual-exam mode
 - Supabase migrations: `viva_sheets`, `viva_bot_sessions`, `viva_bot_responses`,
@@ -144,6 +146,7 @@ Harden everything before real users touch it.
 - Error-state + loading-state review (toasts, skeletons, network-error banners)
 - Pro tier paywall enforcement (Viva Bot gating, AI Tutor limit enforcement)
 - Performance: Lighthouse run, image optimisation, bundle size check
+- Build `/admin/analytics` dashboard (see `decisions/analytics-logging.md`): DAU / MAU, API cost breakdown by provider, feature usage, cost-per-user, raw log table
 - Bulk-seed remaining MCQ content via admin dashboard (target 800+ questions)
 - Mobile delivery build: package app per Day 7 decision (Capacitor or PWA), test
   install flow and push notifications on real Android device

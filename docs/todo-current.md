@@ -80,6 +80,11 @@ Tick items off as you go. Update or re-create this file when the list drains.
 - [ ] Build content-list view: list / edit / delete / archive per module
 - [ ] Add upload-status indicators (processing / ready / errored)
 - [x] Write `docs/admin-content-upload.md` — the guide Azfar will actually use ✓ DONE
+- [ ] Install + configure Sentry: `npx @sentry/cli login`, add `@sentry/nextjs`, wire `src/instrumentation.ts`
+- [ ] Set up Resend: create account at resend.com, add `RESEND_API_KEY` to `.env.local`
+- [ ] Write Supabase migrations: `api_usage_log` + `app_events` tables + RLS (admin-only read)
+- [ ] Write `src/lib/api-rates.ts` (cost rate table) + `src/lib/api-logger.ts` (`logApiCall()` helper)
+- [ ] Wire `app_events` into login / logout / Dow ID upload flows
 
 ### Parallel workstream: Content prep (kickoff Day 10, runs through Day 23)
 - [ ] Send admin email requesting CAD/PDF floor plans for Dow main building (campus map digitisation dependency)
@@ -88,13 +93,16 @@ Tick items off as you go. Update or re-create this file when the list drains.
 
 ---
 
-## Windsurf Handoff — docs ✓ ALL DONE
+## Cursor Handoff — docs ✓ ALL DONE
 
-All 8 docs written. Windsurf / Cascade is ready to build from Day 10.
+Cursor Pro is the IDE. `.cursorrules` is at the project root — Cursor reads it automatically. Read `docs/cursor-guide.md` before your first session tonight.
 
 | Doc | Status |
 |---|---|
-| `docs/windsurf-rules.md` | ✓ Written — copy the marked block into `.windsurf/rules` before first coding session |
+| `.cursorrules` | ✓ Created — Cursor reads it automatically. Source doc: `docs/windsurf-rules.md` (renamed in content, filename is legacy) |
+| `docs/cursor-guide.md` | ✓ Written — read before first Cursor session |
+| `docs/decisions/upload-pipeline.md` | ✓ LOCKED — Vercel Route Handlers + SSE |
+| `docs/decisions/analytics-logging.md` | ✓ LOCKED — api_usage_log + app_events + /admin/analytics |
 | `docs/decisions/credits-payment.md` | ✓ LOCKED |
 | `docs/decisions/dow-id-approval.md` | ✓ LOCKED |
 | `docs/decisions/push-notifications.md` | ✓ LOCKED |

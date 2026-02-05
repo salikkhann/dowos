@@ -28,6 +28,9 @@ Every decision has a dedicated doc in `docs/decisions/`. This index gives you th
 | 15 | Push Notification Permission | `decisions/push-notifications.md` | LOCKED | Ask on **Day 2 of usage** (not first login). Custom priming card before native OS dialog. Max 2 asks lifetime. Quiet hours 10 PM–6 AM PKT, urgent announcements bypass. |
 | 16 | DowEats Ops | `decisions/doweats-ops.md` | LOCKED | Item-first menu with restaurant tag. 6-digit order code. Gate delivery 12–1:30 PM peak. 15 % commission (transparent in cart). |
 | 17 | Marketplace Ops | `decisions/marketplace-ops.md` | LOCKED | Listings instant (Realtime). 10 % commission. Peer-to-peer handoff. Seller withdrawal: PKR 500 min, 0 % fees, 2–5 days manual bank transfer. Manual dispute arbitration. |
+| 18 | Upload Pipeline | `decisions/upload-pipeline.md` | LOCKED | Vercel Route Handlers + SSE streaming for long jobs. Idempotent enrichment (timestamp columns). Migration path to Supabase EFs when Pro available. |
+| 19 | Analytics & API Cost Logging | `decisions/analytics-logging.md` | LOCKED | `api_usage_log` (tokens, cost, latency) + `app_events` (DAU/MAU). Server-side cost calc from rate table. `/admin/analytics` dashboard Phase 6. Sentry free tier for errors. |
+| 20 | Phase 2 Quick Decisions | (inline — see below) | LOCKED | Sonner toasts · next-themes dark mode (root provider) · minimal 404/error pages · Resend email · two-layer admin auth · Cursor IDE |
 
 ---
 

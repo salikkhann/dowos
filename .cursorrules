@@ -1,9 +1,3 @@
-# DowOS — Cursor Rules (source)
-
-**NOTE:** This file is the human-readable source. The live rules file that Cursor reads is `.cursorrules` at the project root — it is already created and up to date. If you edit this file, also update `.cursorrules` to match. Keep under 12 K characters.
-
----
-
 # DowOS Rules
 
 ## ⚡ First thing — read before you build
@@ -11,7 +5,7 @@
 Before touching any feature, read the relevant decision doc in `docs/decisions/`. Every architectural choice is locked there. Do NOT guess or invent architecture. If a feature has no decision doc and you can't find it in `FINAL_LOCKED_DECISIONS.md`, **stop and flag it** — do not build anything undocumented. Ask the developer first.
 
 Decision docs live at: `docs/decisions/`
-Index of all 17 locked decisions: `docs/FINAL_LOCKED_DECISIONS.md`
+Index of all locked decisions: `docs/FINAL_LOCKED_DECISIONS.md`
 Design system: `docs/4_DESIGN_SYSTEM.md`
 UX patterns + accessibility: `docs/5_UXUI_GUIDELINES.md`
 
@@ -31,6 +25,10 @@ UX patterns + accessibility: `docs/5_UXUI_GUIDELINES.md`
 | Icons | Lucide React. 24 px default, 1.5 px stroke, linear style. |
 | Fonts | Outfit Bold (headings). Inter (body). JetBrains Mono (scores, metrics, order codes). |
 | Path alias | `@/*` → `src/*` |
+| Toasts | Sonner (shadcn toast wrapper). One instance at app root. |
+| Dark mode | next-themes. Provider at root layout. `dark:` Tailwind classes. |
+| Error reporting | Sentry (`@sentry/nextjs`). Auto-captures unhandled exceptions. |
+| Email | Resend. API key in `.env.local`. |
 
 shadcn/ui components already installed: `badge`, `button`, `card`, `input`, `label`, `sheet`, `skeleton`, `tooltip`
 
@@ -56,6 +54,7 @@ shadcn/ui components already installed: `badge`, `button`, `card`, `input`, `lab
 | Sub-text on glass | `#5A6B8A` | Min-contrast text on glassmorphic cards (passes 4.5:1) |
 
 **Dark mode overrides:**
+
 | Token | Hex |
 |---|---|
 | BG | `#0F1823` |
@@ -163,6 +162,13 @@ box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
 11. **Supabase:** RLS on every table. Students read/write own rows only. Admin = service-role. Use `createBrowserClient` / `createServerClient` from `src/lib/supabase.ts`.
 12. **AI rate limits (enforce server-side):** AI Tutor — Free: soft 2 / hard 4 msgs per day. Pro: unlimited. MCQ: unlimited. Viva Bot: Pro-only, 180 min/mo.
 13. **Branch discipline:** Never push to `main`. Feature branch → PR → merge.
+14. **Toasts:** Sonner via shadcn toast wrapper. Single instance mounted at app root. Never stack — replace if same type already showing.
+15. **Dark mode:** `next-themes` is the single source of truth. Provider lives in `app/layout.tsx`. Do NOT mirror theme state in Zustand. Use `dark:` Tailwind classes. Add `suppressHydrationWarning` on `<html>`.
+16. **API call logging:** Every call to an external AI/ML provider (Gemini, DeepSeek, Groq, Google TTS, Google Geocoding) MUST log to `api_usage_log` via `logApiCall()` from `src/lib/api-logger.ts`. Never call a provider without logging.
+17. **Error reporting:** Sentry is installed. Unhandled exceptions auto-captured. Do not add manual `Sentry.captureException()` unless the error would otherwise be swallowed silently.
+18. **Admin auth:** Two layers. (1) Middleware checks `users.role = 'admin'` — non-admins redirect to `/dashboard`. (2) Admin API routes use the service-role Supabase client server-side. Never expose service-role key to the browser.
+19. **404 / error pages:** `not-found.tsx` and `error.tsx` at `src/app/` root. Minimal centered layout — no NavShell. Navy text on Offwhite. Simple message + back button.
+20. **Upload pipeline:** Long-running admin jobs (citation enrichment, explanation-fix, PDF extraction) run as Vercel Route Handlers and stream progress via SSE. See `docs/decisions/upload-pipeline.md`.
 
 ---
 
@@ -176,5 +182,4 @@ Before shipping any component, confirm:
 - [ ] Focus ring present on all interactive elements?
 - [ ] No hardcoded secrets?
 - [ ] `next/image` used for all images?
-
----
+- [ ] API calls logged via `logApiCall()`?
