@@ -42,6 +42,13 @@ All in-app payments use **Dow Credits** (manual top-up, verified in 5–10 min).
 12. **Never read `docs/02_DATABASE_SCHEMA.md` in full at session start.** It is 925 lines. Query the live schema via the Supabase MCP server, or read only the specific table block you need. Same rule for any doc over 200 lines — read surgically, not wholesale.
 13. **Compact manually at task boundaries.** Use `/compact` after finishing a feature or resolving a debug session. Never let auto-compaction fire mid-task — it loses the artifact trail (which files were touched and what state they're in).
 14. **Model discipline.** Use Sonnet for all coding. Days 3–8 architecture decisions are done and locked — Opus is not needed for the build phases ahead.
+15. **🔴 CRITICAL: Check Supabase FIRST.** Before proposing ANY schema changes, data migrations, or database-related modifications:
+   - Query the LIVE schema using Supabase MCP (`SUPABASE_URL` and `SUPABASE_ANON_KEY` configured in `.claude/settings.local.json`)
+   - Verify existing tables, columns, indexes, RLS policies, and triggers
+   - Check row counts and data integrity
+   - Compare proposed changes against actual database state
+   - NEVER assume the database matches documentation — always verify against reality
+   - This prevents breaking changes, duplicate table creation, conflicting migrations, and data loss
 
 ---
 
