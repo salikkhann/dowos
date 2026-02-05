@@ -1,6 +1,6 @@
 # CLAUDE.md – DowOS Project Guide
 
-Last updated: 2026-02-05 (Session 5 — stack + folder corrections)
+Last updated: 2026-02-06 (Session 9 — migrations applied, Day 11 ready, todo sync rule added)
 
 ---
 
@@ -49,6 +49,12 @@ All in-app payments use **Dow Credits** (manual top-up, verified in 5–10 min).
    - Compare proposed changes against actual database state
    - NEVER assume the database matches documentation — always verify against reality
    - This prevents breaking changes, duplicate table creation, conflicting migrations, and data loss
+
+16. **Always tick off completed work in both places.** When you finish a task and the user says "tick work off" or "mark it complete":
+   - Update `docs/todo-current.md` — change `[ ]` to `[x]` in Phase section
+   - Update the TodoWrite list — mark task as `completed`
+   - Update `docs/sessions/` with what was done
+   - Never leave a task ticked in one place but not the other — keep them synchronized
 
 ---
 
