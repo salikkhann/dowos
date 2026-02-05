@@ -24,8 +24,7 @@ The PRD listed three features under Education (MCQ, Viva, Progress). Product dis
 | Feature | Phase | Notes |
 |---|---|---|
 | MCQ Solver | 1 | Two sources: Past Papers (high-yield, from past-paper CSV/JSON uploads) + External (other relevant questions). Module picker → source toggle. |
-| Viva Bot | 1 | Pro-gated. Voice Q&A drill. Organised module → subject → subtopic. |
-| Anki Mode | 1 | Free for all. Flashcard-style self-study using the same viva questions + model answers. Students can skip the bot and just learn at their own pace. See §4.2. |
+| Viva Bot + Anki Mode | 1 | Viva Bot: Pro-gated voice Q&A drill, module → subject. Anki Mode: free flashcard view of the same questions, lives inside the Viva entry (not a separate card). See §4.1 + §4.2. |
 | Progress Matrix | 1 | Mastery heatmap per module/subject/subtopic. |
 | Saved Questions | 2 | Student bookmarks questions they want to revisit. |
 | Quick Summaries | 2 | Short AI-generated notes on a topic. |
@@ -61,12 +60,7 @@ The student taps "Education" in the nav. They land on a **cards grid** — a ver
 │  │  🎤  Viva Bot               │    │
 │  │  Practice with voice Q&A    │    │
 │  │  [Start Session →] 🔒 Pro  │    │  ← Pro paywall CTA if free
-│  └─────────────────────────────┘    │
-│                                     │
-│  ┌─────────────────────────────┐    │
-│  │  🃏  Anki Mode              │    │
-│  │  Learn Q&A at your pace     │    │
-│  │  [Start Learning →]        │    │  ← free for all, no Pro gate
+│  │  [📖 Anki Mode →]          │    │  ← free for all — tap to flip Q&A
 │  └─────────────────────────────┘    │
 │                                     │
 │  ┌─────────────────────────────┐    │
@@ -116,17 +110,13 @@ src/app/(app)/education/
 │   └── drill/
 │       └── page.tsx          ← Active drill screen (question → answer → next)
 ├── viva/
-│   ├── page.tsx              ← Viva entry: module picker
+│   ├── page.tsx              ← Viva entry: module picker (shared by both modes)
 │   ├── [module_id]/
 │   │   └── page.tsx          ← Subject picker within module
-│   └── session/
-│       └── page.tsx          ← Active Viva Bot session (voice Q&A)
-├── anki/
-│   ├── page.tsx              ← Anki entry: module picker (same as viva)
-│   ├── [module_id]/
-│   │   └── page.tsx          ← Subject picker within module
-│   └── [subtopic_id]/
-│       └── page.tsx          ← Flashcard drill (question → tap to reveal answer → next)
+│   ├── session/
+│   │   └── page.tsx          ← Active Viva Bot session (voice Q&A, Pro)
+│   └── anki/
+│       └── page.tsx          ← Anki Mode drill (tap-to-reveal, Free)
 ├── progress/
 │   └── page.tsx              ← Progress Matrix heatmap
 ├── saved/                    ← Phase 2
@@ -139,16 +129,16 @@ src/app/(app)/education/
 
 `education/page.tsx` is a Server Component. It fetches the card metadata (e.g. saved-question count, flashcards-due count) in parallel via Supabase and renders the grid. Each card is a simple `<Link>` — no client-side state needed on the landing screen.
 
-The drill screens (`mcq/drill`, `viva/session`, `anki/[subtopic_id]`) are `'use client'` components — they manage active session state (current question, score, timer).
+The drill screens (`mcq/drill`, `viva/session`, `viva/anki`) are `'use client'` components — they manage active session state (current question, score, timer).
 
 ---
 
-## 4.1 Viva Bot — module → subject → subtopic navigation
+## 4.1 Viva Bot — module → subject navigation + mode picker
 
-Viva Bot is organised in a three-level drill-down. This matches how students think about studying ("I need to practise Cardiology → Anatomy → Coronary Circulation") and how the content is tagged in the taxonomy.
+Viva Bot is organised in **two levels**: module → subject. There is no subtopic picker. Once the student picks a subject, the bot draws questions from **all subtopics within that subject** and adapts difficulty dynamically. This keeps the session feeling like a real viva — an examiner doesn't announce "now I'm moving to coronary circulation"; they move between topics naturally.
 
 ```
-Student taps "Viva Bot" card
+Student taps "Viva Bot" card  (or the free "Anki Mode" link on the same card)
      │
      ▼
 ┌── Module Picker ──────────────────────┐
@@ -164,24 +154,36 @@ Student taps "Viva Bot" card
 ┌── Subject Picker ─────────────────────┐
 │  Pick the subject within Cardiovascular│
 │                                       │
-│    Anatomy          [→]   (12 topics) │  ← badge shows how many subtopics
-│    Physiology       [→]   (8 topics)  │     have viva content
-│    Pathology        [→]   (5 topics)  │
+│    Anatomy          [→]   (12 Qs)     │  ← badge shows total viva questions
+│    Physiology       [→]   (8 Qs)      │     available across all subtopics
+│    Pathology        [→]   (5 Qs)      │
 │    …                                  │
 └──────────────┬────────────────────────┘
                │  student taps "Anatomy"
                ▼
-┌── Subtopic Picker ────────────────────┐
-│  Pick the topic to practise.          │
+┌── Mode Picker ────────────────────────┐  ← this screen only appears after
+│  How do you want to study?            │     the subject is chosen
 │                                       │
-│    Coronary Circulation  [→]          │  ← taps into /viva/session
-│    Aortic Arch           [→]          │     with module + subject + subtopic
-│    Heart Chambers        [→]          │     context passed as params
-│    …                                  │
+│  ┌─────────────────────────────────┐  │
+│  │  🎤  Viva Bot                   │  │  ← voice Q&A with the examiner
+│  │  Scored session · 3 modes       │  │     🔒 Pro only
+│  │  [Start Session →] 🔒 Pro      │  │
+│  └─────────────────────────────────┘  │
+│                                       │
+│  ┌─────────────────────────────────┐  │
+│  │  📖  Anki Mode                  │  │  ← tap-to-reveal flashcards
+│  │  Self-study at your own pace    │  │     Free for all
+│  │  [Start Learning →]            │  │
+│  └─────────────────────────────────┘  │
 └───────────────────────────────────────┘
+               │
+               ├── if Viva Bot → mode picker (Strict / Friendly / Standard)
+               │                 → greeting → session loop
+               │
+               └── if Anki    → flashcard drill (no mode needed)
 ```
 
-The subject and subtopic pickers only show entries that have **viva content uploaded**. If Azfar hasn't uploaded a viva sheet for "Heart Valves" yet, it doesn't appear in the list. No empty pages, no dead ends.
+Only subjects that have uploaded viva content appear in the list. No empty pages, no dead ends.
 
 ---
 
@@ -193,7 +195,7 @@ This is the free-tier path into viva-style content. Students who don't have Pro 
 
 ### Navigation
 
-Identical to Viva Bot: module → subject → subtopic. Same three-level drill-down, same filtered lists (only subtopics with content show up).
+Same module → subject picker as Viva Bot. After picking the subject, the student lands directly in the flashcard drill — no mode picker, no examiner greeting. Cards are drawn from all subtopics within the chosen subject, shuffled.
 
 ### The card drill
 
@@ -257,55 +259,109 @@ Anki Mode is the **study tool** — low friction, quick, free. A student can fli
 
 ---
 
-## 5. MCQ Solver — module picker → source toggle flow
+## 5. MCQ Solver — two question pools, two different groupings
 
-This is the most structurally interesting feature because it has two question sources. The flow is designed so that **module context comes first** — that's what students think about ("I'm studying Anatomy"). The past-paper vs external split is a filter, not a fork.
+MCQ Solver has two question pools: **Tested Questions** (past papers) and **General Questions** (all other MCQs). Each pool has its own grouping logic because students use them differently.
+
+- **Tested Questions:** Students ask "what came up in last year's exam?" → grouped by **year first**, then module → subject within that year.
+- **General Questions:** Students ask "I need to practise Anatomy" → grouped by **module → subject → topic**. Within this, they can choose to drill **subject-wise** (all topics in a subject at once) or **topic-wise** (one specific topic). This is a toggle, not a separate page.
+
+### 5.1 Entry — source picker
 
 ```
 Student taps "MCQ Solver" card
      │
      ▼
-┌── Module Picker ──────────────────────────┐
-│  A vertical list of modules the student   │
-│  is currently enrolled in (from their     │
-│  batch + timetable data).                 │
+┌── Source Picker ──────────────────────────┐
 │                                           │
-│    Anatomy          [→]                   │
-│    Physiology       [→]                   │
-│    Biochemistry     [→]                   │
+│  ┌───────────────────┐  ┌─────────────┐   │
+│  │  📋 Tested        │  │  📝 General │   │  ← two top-level pills
+│  │  Questions        │  │  Questions  │   │     (default: Tested)
+│  │  (default)        │  │             │   │
+│  └───────────────────┘  └─────────────┘   │
+│                                           │
+└───────────────────────────────────────────┘
+```
+
+**Why "Tested Questions" is the default:** Past papers are high-yield by definition — they're what actually showed up on exams. The `high_yield_topics` system (from `rag-architecture.md`) already scores these. Defaulting to past papers means the student's first drill is automatically the highest-value one.
+
+### 5.2 Tested Questions — year → module → subject
+
+```
+┌── Year Picker ────────────────────────────┐
+│  Which year's questions?                  │
+│                                           │
+│    2024   Annual + Supplementary  (34 Qs) │  ← badge shows total questions
+│    2023   Annual + Supplementary  (28 Qs) │     for that year
+│    2022   Annual only             (19 Qs) │
+│    …                                      │
+└──────────────┬────────────────────────────┘
+               │  student taps "2024"
+               ▼
+┌── Module Picker ──────────────────────────┐
+│  Which module?                            │
+│                                           │
+│    Cardiovascular                 (12 Qs) │
+│    Respiratory                    (8 Qs)  │
+│    …                                      │
+└──────────────┬────────────────────────────┘
+               │  student taps "Cardiovascular"
+               ▼
+┌── Subject Picker + Drill ─────────────────┐
+│                                           │
+│    Anatomy          (5 Qs)  [→]           │  ← tap subject to drill its questions
+│    Physiology       (4 Qs)  [→]           │
+│    Pathology        (3 Qs)  [→]           │
+│                                           │
+│  [Drill all Cardiovascular 2024 →]        │  ← or drill the whole module at once
+└───────────────────────────────────────────┘
+```
+
+Each question in the list shows a small badge: **Annual** or **Supplementary** so the student knows the exam context.
+
+### 5.3 General Questions — module → subject → topic, with drill-mode toggle
+
+```
+┌── Module Picker ──────────────────────────┐
+│  Which module?                            │
+│                                           │
+│    Cardiovascular                 (48 Qs) │
+│    Respiratory                    (31 Qs) │
+│    …                                      │
+└──────────────┬────────────────────────────┘
+               │  student taps "Cardiovascular"
+               ▼
+┌── Subject Picker ─────────────────────────┐
+│  Which subject?                           │
+│                                           │
+│    Anatomy          (22 Qs)  [→]          │
+│    Physiology       (16 Qs) [→]          │
+│    Pathology        (10 Qs) [→]          │
 │    …                                      │
 └──────────────┬────────────────────────────┘
                │  student taps "Anatomy"
                ▼
-┌── Source Toggle + Question List ──────────┐
+┌── Drill Mode Toggle ──────────────────────┐
 │                                           │
-│  ┌─────────┐  ┌──────────┐               │
-│  │Past Papers│  │  All     │  ← toggle    │
-│  │ (default) │  │  Sources │    pills      │
-│  └─────────┘  └──────────┘               │
+│  ┌──────────────┐  ┌────────────────┐     │
+│  │ Subject-wise │  │  Topic-wise    │     │  ← how do you want to drill?
+│  │  (default)   │  │                │     │     Subject-wise = all 22 Qs
+│  └──────────────┘  └────────────────┘     │     shuffled together.
+│                                           │     Topic-wise = pick a topic first.
+│  "Subject-wise" selected:                 │
+│    All 22 Anatomy questions, shuffled.    │
+│    [Start Drilling →]                     │
 │                                           │
-│  "Past Papers" selected:                  │
-│    Shows only questions extracted from    │
-│    uploaded past-paper CSVs for Anatomy.  │
-│    Each question has a badge: exam year + │
-│    type (Annual / Supplementary / Mock).  │
-│                                           │
-│  "All Sources" selected:                  │
-│    Shows past-paper questions AND         │
-│    external questions, interleaved.       │
-│    Past-paper questions get a small       │
-│    "Past Paper" tag so they're            │
-│    distinguishable.                       │
-│                                           │
-│  [Start Drilling →]  ← taps into drill   │
+│  "Topic-wise" selected:                   │
+│    Coronary Circulation  (6 Qs)  [→]      │  ← topic list appears
+│    Aortic Arch           (4 Qs)  [→]      │
+│    Heart Chambers        (5 Qs)  [→]      │
+│    …                                      │
+│    [Drill all topics →]                   │  ← or drill all, topic-grouped
 └───────────────────────────────────────────┘
 ```
 
-**Why "Past Papers" is the default toggle state:**
-Past papers are high-yield by definition — they're the questions that actually showed up on exams. The `high_yield_topics` system (from `rag-architecture.md`) already scores these. Defaulting to past papers means the student's first drill session is automatically the highest-value one. They can switch to "All Sources" if they want broader coverage.
-
-**Why not a separate "Past Papers" page?**
-Past papers and external questions are the same *type* of content (multiple choice questions with explanations). Splitting them into separate pages doubles the navigation and the drill UI code. A toggle is a one-line filter on the data query — `WHERE source_type = 'past_paper'` vs no filter.
+**Subject-wise** is the default because most students just want to practise a subject broadly. **Topic-wise** is for targeted revision — "I'm weak on coronary circulation specifically."
 
 ---
 
@@ -332,12 +388,12 @@ All Education tab work lives in Phase 3 (Days 17–23). The landing screen and M
 
 | Day | Work item |
 |---|---|
-| 17 | Build `education/page.tsx` — the cards grid landing screen. Render Phase 1 cards (MCQ, Viva, Anki, Progress) as static `<Link>` cards. No badge logic yet — that comes with the data. |
-| 18–19 | Build MCQ Solver: module picker page, source toggle, question list, drill screen. Wire to `mcq_questions` + `past_paper_questions` tables (already seeded by admin). |
+| 17 | Build `education/page.tsx` — the cards grid landing screen. Render Phase 1 cards (MCQ, Viva+Anki, Progress). No badge logic yet — that comes with the data. |
+| 18–19 | Build MCQ Solver: source picker (Tested / General). Tested Questions: year → module → subject drill. General Questions: module → subject → topic with subject-wise / topic-wise toggle. Drill screen shared by both. Wire to `mcq_questions` + `past_paper_questions` tables. |
 | 20 | Build Progress Matrix page (heatmap). |
-| 21 | Build Viva Bot entry: module → subject → subtopic navigation. Pro paywall gate on the card CTA. Build Viva Bot session page (voice Q&A, scored). |
-| 22 | Build Anki Mode: module → subject → subtopic navigation (reuses same picker components as Viva). Build flashcard drill screen (tap-to-reveal, Got it / Need review self-assessment). Wire to same viva sheet data. |
-| 23 | Wire live badges: saved-question count, cards-due count (Phase 2 data not yet seeded — badges hidden until count > 0, so no visual gap). Integration test: full Education tab flow on mobile (375 px) and desktop. Dark-mode check. |
+| 21 | Build Viva entry: module → subject picker → mode picker (Viva Bot vs Anki). Build Viva Bot session (examiner mode picker: Strict / Friendly / Standard → greeting → voice Q&A loop). Pro paywall gate. |
+| 22 | Build Anki Mode drill (tap-to-reveal, Got it / Need review). Shares the same module → subject picker as Viva. Wire to same viva sheet data. |
+| 23 | Wire live badges. Integration test: full Education tab flow on mobile (375 px) and desktop. Dark-mode check. |
 
 Phase 2 additions (Saved Questions, Quick Summaries, Flashcards) each add one card to the grid and one route subtree. No changes to the landing screen component — just one more item in the cards array.
 

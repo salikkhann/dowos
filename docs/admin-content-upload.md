@@ -148,6 +148,28 @@ Here's how it works:
 
 If any row errors, the whole file is rejected. Fix the row and re-upload. No partial uploads.
 
+### 1.8 What happens after upload — the explanation-fix edge function
+
+The citation Edge Function (§1.6) adds *where* information came from. The **explanation-fix Edge Function** improves *what* is written. It's a separate pass that runs on demand — not automatically after upload.
+
+Here's what it does:
+
+1. The Edge Function reads every `explanation` in the MCQ table for the selected module (or the whole table if "All" is chosen).
+2. It sends each explanation to Gemini (with the original question + correct answer as context) and asks it to: fix factual errors, improve clarity, expand thin explanations to AMBOSS standard, and ensure all wrong-answer distractors are addressed.
+3. The improved explanation replaces the original in the database.
+
+**How to trigger it:**
+
+Go to **Admin → Content → MCQ Upload** and click **Re-run explanation fix**. A dropdown lets you scope it: a single module, a single subject, or all content. A status indicator shows progress — it runs in the background so you can navigate away.
+
+**When to use it:**
+
+- After the initial upload batch, once you've reviewed the raw AI-generated explanations and they look thin or wrong.
+- After a textbook PDF is uploaded that covers the same module — the Edge Function can now pull from richer source material.
+- Any time Azfar flags an explanation as incorrect during QA.
+
+**Note:** Citation enrichment (§1.6) and explanation-fix are independent. You can run them in any order. Running explanation-fix first and *then* citations is the recommended workflow — fix the content, then add sources.
+
 ---
 
 ## 2. Textbook / PDF Upload
@@ -254,13 +276,66 @@ Aim for **10–15 questions per subtopic** at launch. The Viva Bot caps a sessio
 
 | Content type | File format | Admin page | Key metadata | Gotcha |
 |---|---|---|---|---|
-| MCQs | `.csv` | Admin → Content → MCQ Upload | module_id, subject_id, subtopic_id | `options` and `topic_tags` use pipes not commas. `correct_answer` uppercase A–E. Upload textbooks first (citation Edge Function needs them). |
+| MCQs | `.csv` | Admin → Content → MCQ Upload | module_id, subject_id, subtopic_id | `options` and `topic_tags` use pipes not commas. `correct_answer` uppercase A–E. Upload textbooks first (citation Edge Function needs them). Run explanation-fix Edge Function after upload to polish explanations (§1.8). |
 | Textbooks / Slides | `.pdf` | Admin → Content → Textbook Upload | Module, Subject, Subtopic (optional) | No CSV — just the PDF + dropdowns. Upload these **before** MCQs. |
 | Viva Sheets | `.csv` (from Google Sheet) | Admin → Content → Viva Sheet Upload | Module, Subject, Subtopic | `key_points` pipes not commas; difficulty 1–5. Model answers show in Anki mode too — write them clearly. |
 
 ---
 
-## 5. Target numbers (launch goal)
+## 5. Admin Education Dashboard — editing questions after upload
+
+### 5.1 What it is
+
+Once questions are uploaded, admins need a way to edit, delete, and reorder them without re-uploading a whole CSV. The **Admin Education Dashboard** is that page. It lives at **Admin → Education**.
+
+### 5.2 What's on the page
+
+The page is organised around the same taxonomy tree the students see: **Module → Subject → Subtopic**. Dropdowns at the top let the admin drill down to any level. Once a subtopic (or subject) is selected, the questions in that bucket appear as a list.
+
+```
+┌─────────────────────────────────────────────┐
+│  Admin → Education                          │
+├─────────────────────────────────────────────┤
+│  [Module ▼]  [Subject ▼]  [Subtopic ▼]     │  ← cascade dropdowns
+│  Content type: [MCQs ▼]                     │  ← switch between MCQ / Viva
+├─────────────────────────────────────────────┤
+│                                             │
+│  1.  Which artery is the first branch…     │  ← question text (truncated)
+│      ✓ A · Brachiocephalic trunk           │  ← correct answer shown
+│      [Edit] [Delete] [⬆] [⬇]             │  ← action row
+│                                             │
+│  2.  A 45-year-old presents with…          │
+│      ✓ C · Right coronary artery           │
+│      [Edit] [Delete] [⬆] [⬇]             │
+│  …                                          │
+│                                             │
+│  [+ Add question]                           │  ← opens inline form (same fields as CSV)
+├─────────────────────────────────────────────┤
+│  Bulk actions: [Select all] [Delete selected]│
+└─────────────────────────────────────────────┘
+```
+
+### 5.3 Actions available
+
+| Action | What it does |
+|---|---|
+| **Edit** | Opens an inline edit form pre-filled with the question's current data. All fields are editable: question text, options, correct answer, explanation, topic tags, exam year, taxonomy IDs. Save replaces the row in-place. |
+| **Delete** | Soft-delete. The question is marked `archived = true` and disappears from student-facing drills. An admin can unarchive it from a separate "Archived" filter. **Not a hard delete** — no data is lost. |
+| **⬆ / ⬇** | Reorders the question within its current subtopic bucket. This controls the order in which questions appear in non-shuffled views (e.g. year-wise drill in Tested Questions). Stored as an integer `sort_order` on the row. |
+| **+ Add question** | Opens the same inline form, but blank. Saves a new row directly — no CSV needed. Useful for one-off additions. |
+| **Select all / Delete selected** | Bulk soft-delete. Confirmation dialog shows how many questions will be archived. |
+
+### 5.4 Switching between MCQ and Viva content
+
+The **Content type** dropdown at the top switches the list between MCQs and Viva Sheet questions. The edit fields change accordingly — Viva questions show `model_answer`, `difficulty`, `key_points` instead of `options` and `correct_answer`. Same taxonomy dropdowns, same reorder and delete actions.
+
+### 5.5 Who can access this
+
+Role-gated: **admin only**. The route is `/admin/education`. Students and regular users cannot reach it. Salik (or any user with the `admin` role) is the only one who can edit live questions. Azfar prepares content via CSV upload — editing live questions is an admin action.
+
+---
+
+## 6. Target numbers (launch goal)
 
 | Content | Target | Timeline |
 |---|---|---|
