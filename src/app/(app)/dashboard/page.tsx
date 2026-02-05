@@ -1,214 +1,172 @@
-import {
-  BookOpen,
-  Bot,
-  Mic,
-  Calendar,
-  CheckCircle2,
-  Bell,
-  TrendingUp,
-  Clock,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+/**
+ * Dashboard Page (authenticated landing page)
+ * Displays:
+ * - Time-aware greeting
+ * - 6 skeleton widget stubs (will be wired with data in later phases)
+ *   1. Exam Countdown
+ *   2. Timetable (mini)
+ *   3. Attendance (quick-mark)
+ *   4. Announcements
+ *   5. Prayers
+ *   6. Lost & Found
+ *
+ * Reference: docs/decisions/ui-page-structure.md §3, docs/decisions/profile-card-ux.md §1
+ */
 
-// ── Quick-action card ─────────────────────────────────────────────────────
-function QuickAction({
-  icon: Icon,
-  label,
-  href,
-  color,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  href: string;
-  color: string; // tailwind bg class
-}) {
-  return (
-    <a
-      href={href}
-      className={cn(
-        "glass-card rounded-xl p-4 flex flex-col items-center gap-2 text-center",
-        "hover:scale-[1.03] transition-transform cursor-pointer",
-      )}
-    >
-      <div className={cn("h-11 w-11 rounded-full flex items-center justify-center", color)}>
-        <Icon className="h-5 w-5 text-white" />
-      </div>
-      <span className="text-xs font-medium text-foreground">{label}</span>
-    </a>
-  );
-}
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 
-// ── Timetable stub row ────────────────────────────────────────────────────
-function TimetableRow({
-  time,
-  subject,
-  location,
-  color,
-}: {
-  time: string;
-  subject: string;
-  location: string;
-  color: string;
-}) {
-  return (
-    <div className="flex items-center gap-3 py-2.5 border-b border-border last:border-0">
-      <div className={cn("w-1 h-10 rounded-full shrink-0", color)} />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground truncate">{subject}</p>
-        <p className="text-xs text-muted-foreground truncate">{location}</p>
-      </div>
-      <span className="text-xs text-muted-foreground whitespace-nowrap">{time}</span>
-    </div>
-  );
-}
+export default async function DashboardPage() {
+  // Get user for greeting
+  let firstName = "Student";
 
-// ── Announcement stub ────────────────────────────────────────────────────
-function AnnouncementItem({
-  title,
-  time,
-  urgent,
-}: {
-  title: string;
-  time: string;
-  urgent?: boolean;
-}) {
-  return (
-    <div className="flex items-start gap-2.5 py-2 border-b border-border last:border-0">
-      {urgent && <Badge variant="destructive" className="shrink-0 text-xs">Urgent</Badge>}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-foreground">{title}</p>
-        <p className="text-xs text-muted-foreground">{time}</p>
-      </div>
-    </div>
-  );
-}
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // Ignored
+            }
+          },
+        },
+      }
+    );
 
-// ── Page ──────────────────────────────────────────────────────────────────
-export default function DashboardPage() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("users")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.full_name) {
+        firstName = profile.full_name.split(" ")[0];
+      }
+    }
+  } catch (err) {
+    console.error("[Dashboard] Error fetching user:", err);
+  }
+
+  // Time-aware greeting
+  const hour = new Date().getHours();
+  let greeting = "Good morning";
+  if (hour >= 12 && hour < 17) greeting = "Good afternoon";
+  else if (hour >= 17) greeting = "Good evening";
+  else if (hour >= 21 || hour < 6) greeting = "Good night";
+
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="space-y-6">
       {/* Greeting */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-foreground">
-          Good morning, Student
+      <div>
+        <h1 className="text-3xl font-bold text-navy-900 dark:text-white">
+          {greeting}, {firstName}
         </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Here's your day at a glance</p>
+        <p className="text-navy-400 dark:text-navy-300 text-sm">
+          Welcome back to DowOS
+        </p>
       </div>
 
-      {/* ── Bento Grid ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-
-        {/* Quick actions – span full width */}
-        <div className="col-span-2 md:col-span-3 grid grid-cols-4 gap-3">
-          <QuickAction icon={Bot} label="AI Tutor" href="/ai" color="bg-primary" />
-          <QuickAction icon={BookOpen} label="MCQ Solver" href="/education/mcq" color="bg-[#3498db]" />
-          <QuickAction icon={Mic} label="Viva Bot" href="/education/viva" color="bg-accent" />
-          <QuickAction icon={TrendingUp} label="Progress" href="/education/progress" color="bg-[#27ae60]" />
-        </div>
-
-        {/* Today's timetable – spans 2 cols on desktop */}
-        <Card className="col-span-2 glass-card border-0">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-primary" />
-                Today's Schedule
-              </CardTitle>
-              <Badge variant="secondary">Monday</Badge>
+      {/* Widgets Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Widget 1: Exam Countdown */}
+        <Card className="p-4">
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-navy-700 dark:text-white">
+              Exam Countdown
+            </h2>
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-3/4 rounded" />
+              <Skeleton className="h-4 w-1/2 rounded" />
             </div>
-          </CardHeader>
-          <CardContent>
-            <TimetableRow
-              time="8:00 AM"
-              subject="Cardiology – Lecture"
-              location="Lecture Hall 1"
-              color="bg-primary"
-            />
-            <TimetableRow
-              time="10:00 AM"
-              subject="Anatomy – Lab"
-              location="Lab Block A"
-              color="bg-accent"
-            />
-            <TimetableRow
-              time="1:00 PM"
-              subject="Physiology – Tutorial"
-              location="Room 204"
-              color="bg-[#3498db]"
-            />
-            <p className="text-xs text-muted-foreground mt-2 text-center">
-              Tap a class to mark attendance
-            </p>
-          </CardContent>
+          </div>
         </Card>
 
-        {/* Attendance runway – 1 col */}
-        <Card className="glass-card border-0">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-[#27ae60]" />
+        {/* Widget 2: Timetable Mini */}
+        <Card className="p-4">
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-navy-700 dark:text-white">
+              Today's Classes
+            </h2>
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full rounded" />
+              <Skeleton className="h-10 w-full rounded" />
+              <Skeleton className="h-10 w-full rounded" />
+            </div>
+          </div>
+        </Card>
+
+        {/* Widget 3: Attendance Quick-Mark */}
+        <Card className="p-4">
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-navy-700 dark:text-white">
               Attendance
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Module mini-bar */}
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-muted-foreground">Cardiology</span>
-                <span className="font-mono font-semibold text-foreground">82%</span>
-              </div>
-              <div className="h-2 w-full rounded-full bg-muted">
-                <div className="h-full w-4/5 rounded-full bg-[#27ae60]" />
+            </h2>
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full rounded" />
+              <div className="flex gap-2">
+                <Skeleton className="h-8 flex-1 rounded" />
+                <Skeleton className="h-8 flex-1 rounded" />
               </div>
             </div>
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-muted-foreground">Anatomy</span>
-                <span className="font-mono font-semibold text-foreground">76%</span>
-              </div>
-              <div className="h-2 w-full rounded-full bg-muted">
-                <div className="h-full rounded-full bg-[#f39c12]" style={{ width: "76%" }} />
-              </div>
-            </div>
-
-            {/* Runway */}
-            <div className="rounded-lg bg-accent/10 border border-accent/30 p-2.5 mt-1">
-              <p className="text-xs font-semibold text-accent-foreground flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                Runway Calculator
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                You can safely skip <span className="font-mono font-bold text-accent-foreground">3</span> more classes
-              </p>
-            </div>
-          </CardContent>
+          </div>
         </Card>
 
-        {/* Announcements strip – full width */}
-        <Card className="col-span-2 md:col-span-3 glass-card border-0">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Bell className="h-4 w-4 text-primary" />
+        {/* Widget 4: Announcements */}
+        <Card className="p-4">
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-navy-700 dark:text-white">
               Announcements
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AnnouncementItem
-              title="Viva schedule for Cardiology posted – check your roll number"
-              time="2 hours ago"
-              urgent
-            />
-            <AnnouncementItem
-              title="Library hours extended this week until 9 PM"
-              time="Yesterday"
-            />
-            <AnnouncementItem
-              title="New batch of lab coats available in Merch store"
-              time="2 days ago"
-            />
-          </CardContent>
+            </h2>
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-full rounded" />
+              <Skeleton className="h-8 w-3/4 rounded" />
+              <Skeleton className="h-8 w-4/5 rounded" />
+            </div>
+          </div>
+        </Card>
+
+        {/* Widget 5: Prayers */}
+        <Card className="p-4">
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-navy-700 dark:text-white">
+              Prayer Times
+            </h2>
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-full rounded" />
+              <Skeleton className="h-6 w-full rounded" />
+              <Skeleton className="h-6 w-full rounded" />
+            </div>
+          </div>
+        </Card>
+
+        {/* Widget 6: Lost & Found */}
+        <Card className="p-4">
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-navy-700 dark:text-white">
+              Lost & Found
+            </h2>
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full rounded" />
+              <Skeleton className="h-12 w-full rounded" />
+            </div>
+          </div>
         </Card>
       </div>
     </div>
