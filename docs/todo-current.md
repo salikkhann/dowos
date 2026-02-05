@@ -113,6 +113,7 @@ Tick items off as you go. Re-create when the list drains.
 - [ ] Build drill-entry analytics bar: `📊 % correct · N done` + `🔥 streak` (scope = current selection, shown in breadcrumb)
 - [ ] Build filter pills: `[All]` `[Incorrects]` `[Undone]` — updates question list + count in real time
 - [ ] Add `🔖` bookmark icon on every drill question → taps save to Saved Questions (filled = saved, tap again to unsave)
+- [ ] Add **"Ask AI →"** button on every MCQ explanation bar → pre-loads question + explanation into AI Tutor chat at `/ai` (Free for all — see `education-tab.md` §5.5)
 - [ ] Wire `api_usage_log` into every MCQ Solver API call via `logApiCall()`
 - [ ] Write Supabase migrations: `mcq_questions`, `past_paper_questions`, `mcq_attempts`
 
@@ -123,7 +124,7 @@ Tick items off as you go. Re-create when the list drains.
 - [ ] Include module/subject context tag in every prompt for medical accuracy
 - [ ] Build session memory: persist `chat_sessions` + `chat_messages` to Supabase
 - [ ] Build long-term memory: `user_knowledge_base` (pgvector) — topics student has studied, weak areas
-- [ ] Build rate-limit UI: soft warning toast at 2 msgs/day (Free), hard block + upgrade CTA at 4 msgs. Pro = unlimited.
+- [ ] Build rate-limit UI: soft warning toast at 5 msgs/day (Free), hard block + upgrade CTA at 6 msgs. Pro = unlimited.
 - [ ] Wire Tier 2 fallback: if Flash errors 3×, route to DeepSeek R1 (see `ai-routing-fallback.md`)
 - [ ] Wire `api_usage_log` into every AI Tutor call
 - [ ] Write Supabase migrations: `chat_sessions`, `chat_messages`, `user_knowledge_base`
@@ -144,7 +145,7 @@ Tick items off as you go. Re-create when the list drains.
 - [ ] Build **EVALUATE** state: capture student speech via Groq Whisper STT → LLM score against model answer
 - [ ] Build **FOLLOWUP** state: adaptive follow-up question if answer was weak; skip if strong
 - [ ] Build **SCORE** state: session report card — 50-point total, per-dimension breakdown, suggested topics
-- [ ] Build Pro paywall gate: if Free user taps "Start Session" → upgrade CTA modal
+- [ ] Build **1 free session taste** for Free users: first Viva session plays fully → ends with "That's your free session. Upgrade to Pro for 180 min / month." Subsequent sessions → Pro paywall modal
 - [ ] Wire `api_usage_log` into Viva Bot + STT (Groq) + TTS (Google Cloud) calls
 - [ ] Integration test: full voice round-trip latency target < 3 s
 - [ ] Write Supabase migrations: `viva_sheets`, `viva_bot_sessions`, `viva_bot_responses`
@@ -157,14 +158,22 @@ Tick items off as you go. Re-create when the list drains.
 - [ ] Save button → adds question to Saved Questions collection
 - [ ] Free for all — no paywall
 
-### 4C – Progress Matrix + Saved Questions (Days 29–30)
-- [ ] Build Progress Matrix heatmap page: rows = modules, columns = subjects, cells = subtopic mastery %
-- [ ] Color-code cells: green (≥ 80 %), amber (50–79 %), red (< 50 %), grey (untouched)
-- [ ] Build annual-exam mode toggle (filters to exam-relevant subtopics only)
+### 4C – Progress Matrix + AI Study Plan + Saved Questions (Days 29–30)
+- [ ] Build Progress Matrix heatmap page: rows = modules, columns = subjects, cells = subject mastery %
+- [ ] Colour-code cells: 🟩 Strong (≥ 70 %), 🟨 Progressing (40–69 %), 🟥 Needs Work (< 40 %), ⬜ Not Attempted (0 attempts)
+- [ ] Add colour legend strip (always visible on heatmap — see `education-tab.md` §6.2)
+- [ ] Add attempt-count badge on every cell (bottom-right corner — disambiguates high-accuracy-low-volume)
+- [ ] Wire multi-source data feed: MCQ attempts (full weight), Browse Q&A reads (low weight — "touched"), Viva Bot session scores (full weight)
+- [ ] Build tap-to-drill-down: mini stats panel (attempts, correct, incorrect, week-on-week trend ↑↓) + "Drill this topic →" CTA
+- [ ] Build **Top 3 Weak Topics** card: auto-detects subjects with most attempts + lowest accuracy. Tap → MCQ drill filtered to that subject
+- [ ] Build **Exam Readiness score** per module: `(% subjects attempted) × (avg accuracy)`. Shown next to each module name on the heatmap
+- [ ] Build **AI Study Plan** card (Pro-gated): reads heatmap data → Gemini Flash generates weekly 3-topic plan with time estimates. Free users see blurred preview + upgrade CTA. Refresh every 7 days (max 1 manual refresh / day)
+- [ ] Wire `logApiCall()` into every AI Study Plan Gemini call
+- [ ] Write Supabase migrations: `progress_matrix`, `ai_study_plans`
 - [ ] Build Saved Questions page at `/education/saved` — list of saved questions
 - [ ] Add source filter pills on Saved Questions: `[All]` `[MCQ]` `[Browse Q&A]`
+- [ ] Wire **20-question cap** for Free users on Saved Questions (server-side enforcement). Show "Upgrade to Pro — save unlimited" CTA when cap reached
 - [ ] Wire live saved-count badge on Education landing Saved Questions card (hidden if 0)
-- [ ] Write Supabase migration: `progress_matrix`
 - [ ] Coordinate with Azfar: all Viva sheets for Batch 1 current modules seeded
 
 ---
@@ -217,7 +226,7 @@ Tick items off as you go. Re-create when the list drains.
 
 ### Must-do before beta
 - [ ] Full mobile-first QA pass: every screen at 375 px, all touch targets ≥ 44 × 44 px, correct keyboard types on inputs
-- [ ] Pro-tier paywall enforcement audit: Viva Bot gate blocks correctly, AI Tutor enforces 2/4 rate limit, Pro users are unlimited
+- [ ] Pro-tier paywall enforcement audit: Viva Bot 1-free-session taste works + subsequent sessions block correctly, AI Tutor enforces 5/6 rate limit, Saved Qs 20-cap works, AI Study Plan Pro gate works, Pro users unlimited on all
 - [ ] Error-state + loading-state review: toast messages, skeleton placeholders, network-error banners on every async page
 - [ ] Lighthouse run: target Performance ≥ 90, Accessibility ≥ 90. Fix anything below.
 - [ ] Bundle-size check: ensure no bloat from unused deps

@@ -292,18 +292,19 @@ This is the heart of the campaign. One feature per day. Every post teaches the a
 ---
 
 #### Mar 19 — Progress Matrix 📊
-**Post type:** Carousel (5 slides)
+**Post type:** Carousel (6 slides)
 **Hook (Slide 1):** "See exactly where you're weak. One screen."
 
 **Slides:**
-- Slide 2: The heatmap — subjects on one axis, topics on the other. Green = strong. Light = needs work.
-- Slide 3: Tap a light cell → shows drill stats for that topic
-- Slide 4: Streak counter + % correct — displayed in monospace metric style
-- Slide 5: "Know your weak spots. Fix them. Follow for more."
+- Slide 2: The heatmap — modules as rows, subjects as columns. Colour legend visible: 🟩 Strong · 🟨 Progressing · 🟥 Needs Work · ⬜ Not Attempted. Attempt count badge on every cell.
+- Slide 3: Tap a red cell → mini stats panel opens: attempts, correct %, week-on-week trend arrow, "Drill this topic →" button
+- Slide 4: "Top 3 Weak Topics" card — auto-detected from the data. Tap one → straight into the drill.
+- Slide 5: Exam Readiness score per module — one number that says "how ready are you?" + AI Study Plan preview (blurred, Pro feature)
+- Slide 6: "Know your weak spots. Fix them. Follow for more."
 
 **Caption:**
 > Studying without data is guessing.
-> Progress Matrix shows you exactly which subjects need your attention.
+> Progress Matrix shows you exactly which subjects need your attention — and tells you what to do about it.
 > One heatmap. Full clarity. 🔍
 
 ---
@@ -412,7 +413,7 @@ Options: WhatsApp / Notice boards / I usually don't
 **Slides:**
 - Slide 2: vs International — AMBOSS "$12.99 / mo = PKR 3 600+ / mo" vs DowOS "PKR 3 000 / year (total)"
 - Slide 3: vs Local — "Past papers only. PKR 5 000 / yr. Buggy." vs DowOS "12 features. PKR 3 000 / yr. Actually works."
-- Slide 4: What Pro unlocks — Unlimited AI Tutor, Viva Bot (180 min / mo), future premium features
+- Slide 4: What Pro unlocks — Unlimited AI Tutor, conversation history, voice mode, Viva Bot (180 min / mo), AI Study Plan, unlimited saved questions, offline content
 - Slide 5: What's free — MCQ Solver (unlimited), Timetable, Attendance, Maps, Browse Q&A, Prayer Times, Lost & Found, Announcements
 - Slide 6: How to pay — Dow Credits. Manual top-up. Verified in 5–10 minutes. No USD, no foreign credit card hassle.
 - Slide 7: "For Dow students. By Dow students. Follow for more."

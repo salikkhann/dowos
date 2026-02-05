@@ -11,8 +11,8 @@ Target users: ~2 000 medical students (Batches 1–5).
 The app is built by a three-person team (Salik – dev, Ammaar – ops, Azfar – content).
 
 Core product tiers:
-- **Free** – Auth, Timetable, Attendance, AI Tutor (rate-limited), MCQ Solver (unlimited), Progress Matrix, Lost & Found, Announcements.
-- **Pro** – PKR 3 000 / year. Unlocks unlimited AI Tutor, Viva Bot (180 min/mo), and future premium features.
+- **Free** – Auth, Timetable, Attendance, AI Tutor (5 soft / 6 hard msgs/day), MCQ Solver (unlimited + "Ask AI →" on every explanation), Progress Matrix (full heatmap, weak topics, readiness scores), Saved Questions (20 max), Viva Bot (1 free session taste), Browse Q&A, Lost & Found, Announcements, Prayer Times, Maps.
+- **Pro** – PKR 3 000 / year (or PKR 1 500 exam-season pass, 3 months). Unlocks: unlimited AI Tutor, conversation history, voice mode, Viva Bot (180 min/mo), AI Study Plan, unlimited saved questions, offline content download.
 
 Revenue sources (Year 1 target PKR 2.25 M):
 | Source | Model |
@@ -124,9 +124,11 @@ docs/                     # All project docs (PRD, schema, design, sessions, roa
 **AI rate-limiting rules:**
 | Feature | Free limit | Pro limit | Reset |
 |---|---|---|---|
-| AI Tutor | 2 soft / 4 hard | Unlimited | Daily |
-| MCQ Solver | Unlimited | Unlimited | — |
-| Viva Bot | — (Pro only) | 180 min / month | Monthly |
+| AI Tutor | 5 soft / 6 hard | Unlimited | Daily |
+| MCQ Solver | Unlimited (+ "Ask AI →" links to AI Tutor) | Unlimited | — |
+| Viva Bot | 1 free session taste | 180 min / month | Monthly |
+| Saved Questions | 20 max | Unlimited | — |
+| AI Study Plan | — (Pro only) | Weekly plan via Gemini | Weekly |
 
 **Gemini integration hints:**
 - Route simple keyword queries locally; complex questions → Gemini API.

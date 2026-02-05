@@ -321,7 +321,7 @@ Prayer Times is **client-side-first**. The core calculation never hits a server 
 9. **Timezone:** `Asia/Karachi` (UTC+5). Display: DD/MM/YYYY. ISO only when API requires.
 10. **Currency:** PKR everywhere. 1 Dow Credit = PKR 1.
 11. **Supabase:** Browser → `createBrowserClient()`. Server → `createServerClient(cookies)`. NEVER browser client in Server Component. RLS on every table.
-12. **AI rate limits (server-side):** AI Tutor Free: soft 2 / hard 4 / day. Pro: unlimited. MCQ: unlimited. Viva Bot: Pro-only, 180 min/mo.
+12. **AI rate limits (server-side):** AI Tutor Free: soft 5 / hard 6 / day. Pro: unlimited. MCQ: unlimited (explanations identical Free + Pro; "Ask AI →" on every explanation opens AI Tutor). Viva Bot: 1 free session taste, then Pro-only (180 min/mo). Saved Qs: Free cap 20 / Pro unlimited. AI Study Plan: Pro-only (reads Progress Matrix → Gemini weekly plan).
 13. **Branches:** Never push to `main`. Feature branch → PR → merge.
 14. **Toasts:** Sonner. One per type. New replaces old.
 15. **Dark mode:** `next-themes` only. `suppressHydrationWarning` on `<html>`. `dark:` classes everywhere.

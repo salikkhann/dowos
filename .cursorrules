@@ -375,7 +375,7 @@ Prayer Times is **client-side-first**. The core calculation never hits a server 
     - Server (Server Components, Route Handlers, middleware): `createServerClient(cookies)`.
     - NEVER use `createBrowserClient` inside a Server Component — it will fail silently or leak.
     - RLS on every table. Students read/write own rows. Admin uses service-role client server-side only.
-12. **AI rate limits (enforce server-side, not client):** AI Tutor — Free: soft warning at 2 msgs/day, hard block at 4. Pro: unlimited. MCQ Solver: unlimited. Viva Bot: Pro-only, 180 min/mo.
+12. **AI rate limits (enforce server-side, not client):** AI Tutor — Free: soft warning at 5 msgs/day, hard block at 6. Pro: unlimited. MCQ Solver: unlimited (explanations identical for Free + Pro; every explanation has an "Ask AI →" button that opens AI Tutor with question pre-loaded — see `education-tab.md` §5.5). Viva Bot: 1 free session taste, then Pro-only (180 min/mo). Saved Questions: Free cap 20, Pro unlimited. AI Study Plan: Pro-only (reads Progress Matrix → Gemini weekly plan — see §6.8).
 13. **Branch discipline:** NEVER push to `main`. Feature branch → commit → push → PR → merge. Always.
 14. **Toasts:** Sonner via shadcn. Single instance at app root. One toast per type at a time — new replaces old, never stack.
 15. **Dark mode:** `next-themes` `useTheme()` is the single source of truth. Provider in `app/layout.tsx`. Add `suppressHydrationWarning` on the root `<html>` tag. Use `dark:` Tailwind classes for every styled element.

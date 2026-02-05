@@ -414,9 +414,99 @@ Every time a student enters a drill (from either Tested or General), they see a 
 
 **Analytics scope:** Stats are scoped to whatever the student selected (e.g. "2024 Cardiovascular Anatomy" or "General Anatomy"). A breadcrumb above the stats block shows the scope. The student can also see their **overall** stats from the Progress Matrix page.
 
+### 5.5 MCQ explanation — "Ask AI →" button
+
+Every MCQ explanation screen (shown after the student answers a question) has a small **"Ask AI →"** button in the explanation bar. This button is **free for all users** — no Pro gate.
+
+**What it does:**
+- Pre-loads the question + the basic explanation as context
+- Navigates the student directly to `/ai` (AI Tutor chat)
+- The AI then teaches the student *why* the answer is right and *why* the other options are wrong — interactively, with follow-ups
+
+**Why not a separate "deep explanation" feature:**
+- All explanations are identical text (no Pro vs Free split)
+- The conversion happens naturally: students who use "Ask AI →" burn through their daily AI message cap faster, which surfaces the Pro paywall at exactly the moment they're learning
+- Better UX than a locked explanation — it feels like a feature, not a paywall
+
+**Implementation note:**
+The button passes two pieces of state to the AI Tutor route: `question` (the MCQ text + options) and `explanation` (the basic explanation text). These are injected as the first assistant message in the new chat session so the AI has full context without the student typing anything.
+
 ---
 
-## 6. Card design spec
+## 6. Progress Matrix — full spec
+
+Progress Matrix lives at `/education/progress`. It is the student's single view of their mastery across all modules, subjects, and subtopics. The heatmap and all analytics are **free for all users**. The **AI Study Plan** feature that reads from it is **Pro-only** — this is the conversion trigger on this page.
+
+### 6.1 Heatmap grid
+
+- **Rows:** Modules (Cardiovascular, Respiratory, Renal, …)
+- **Columns:** Subjects within each module (Anatomy, Physiology, Pathology, …)
+- **Cells:** Each cell = one subject within a module. Colour = mastery level (see §6.2). Number badge = attempt count (see §6.3).
+
+### 6.2 Colour legend (always visible)
+
+A small legend strip on the page — always visible above or beside the heatmap:
+
+| Colour | Label | Accuracy range |
+|---|---|---|
+| 🟩 Green | Strong | ≥ 70 % correct |
+| 🟨 Amber | Progressing | 40–69 % correct |
+| 🟥 Red | Needs Work | < 40 % correct |
+| ⬜ Grey | Not Attempted | 0 attempts |
+
+### 6.3 Attempt count badge
+
+Each cell shows a small number in the bottom-right corner: total attempts for that subject. This disambiguates high-accuracy-low-volume cells (e.g. 100 % from 2 questions) from genuinely strong cells (e.g. 85 % from 40 questions).
+
+### 6.4 Multi-source data feed
+
+The heatmap draws from **three sources**, not just MCQ drills:
+
+| Source | What feeds in | Weight |
+|---|---|---|
+| MCQ Solver | Correct / incorrect per attempt | Full |
+| Browse Q&A | Question expanded + answer read | Low — marks topic as "touched" (shifts grey → light amber only) |
+| Viva Bot | Session score per subject | Full — averaged with MCQ data |
+
+### 6.5 Tap-to-drill-down
+
+Tapping any cell opens a mini stats panel:
+- Total attempts · Correct · Incorrect
+- % correct trend: this week vs last week — a single ↑ or ↓ arrow
+- A **"Drill this topic →"** CTA that navigates directly to the MCQ drill filtered to that subject
+
+### 6.6 Top 3 Weak Topics
+
+Below the heatmap: a card titled *"Focus on these"* that auto-detects the 3 subjects with the **most attempts but the lowest accuracy**. These are genuine weaknesses — not untouched topics.
+
+Tapping any of the 3 → navigates to the MCQ drill filtered to that subject.
+
+### 6.7 Exam Readiness score
+
+Next to each module name on the heatmap, a single percentage:
+
+```
+Readiness = (% of subjects attempted within the module) × (average accuracy across attempted subjects)
+```
+
+A student who has 100 % accuracy on 2 out of 10 subjects has 20 % readiness — coverage matters as much as accuracy.
+
+### 6.8 AI Study Plan — Pro feature
+
+A card at the bottom of the Progress Matrix page. Visible to all, but **gated behind a Pro paywall**. Free users see a blurred preview + "Upgrade to Pro" CTA.
+
+**What it does:**
+- Reads the student's heatmap data (accuracy, attempts, weak topics, readiness scores)
+- Sends a weekly prompt to Gemini Flash: *"Based on this student's Progress Matrix data, generate a 3-day study plan with specific topics and estimated time per topic"*
+- Outputs a clean weekly plan card: *"Monday: 20 min on Coronary Circulation (Anatomy). Tuesday: 15 min on Renal Tubules. Wednesday: review your Top 3 weak topics."*
+
+**Refresh cadence:** Plan regenerates every 7 days automatically. Student can tap "Refresh plan" once per day manually.
+
+**Logging:** Every AI Study Plan generation must go through `logApiCall()` — it's a Gemini Flash call.
+
+---
+
+## 7. Card design spec
 
 Each Education card follows the same component shape. Built from existing shadcn primitives (`card`, `badge`, `button`).
 
@@ -433,15 +523,15 @@ Each Education card follows the same component shape. Built from existing shadcn
 
 ---
 
-## 7. What to build and when
+## 8. What to build and when
 
 All Education tab work lives in Phase 3 (Days 17–23). The landing screen and MCQ are the first things built because MCQ is the highest-volume feature (students drill questions daily).
 
 | Day | Work item |
 |---|---|
 | 17 | Build `education/page.tsx` — the cards grid landing screen. Render Phase 1 cards (MCQ, Viva Bot + Browse Q&A, Progress Matrix, Saved Questions). No badge logic yet — that comes with the data. |
-| 18–19 | Build MCQ Solver: source picker (Tested / General). Tested Questions: year → module → subject drill. General Questions: module → subject → topic with subject-wise / topic-wise toggle. Drill screen shared by both. Wire to `mcq_questions` + `past_paper_questions` tables. Add stats bar (% correct, streak) + filter pills (All / Incorrects / Undone). Save button on every drill question. |
-| 20 | Build Progress Matrix page (heatmap). Build Saved Questions page (list of saved questions, filterable by source: MCQ / Browse Q&A). |
+| 18–19 | Build MCQ Solver: source picker (Tested / General). Tested Questions: year → module → subject drill. General Questions: module → subject → topic with subject-wise / topic-wise toggle. Drill screen shared by both. Wire to `mcq_questions` + `past_paper_questions` tables. Add stats bar (% correct, streak) + filter pills (All / Incorrects / Undone). Save button on every drill question. Add **"Ask AI →"** button on every explanation bar — see §5.5. |
+| 20 | Build Progress Matrix page: heatmap with colour legend (§6.2), attempt badges (§6.3), multi-source feed (§6.4), tap-to-drill-down (§6.5), Top 3 Weak Topics (§6.6), Exam Readiness scores (§6.7). Build AI Study Plan card — Pro-gated, Gemini-backed (§6.8). Build Saved Questions page (list, filterable by source, 20-cap for Free). |
 | 21 | Build Viva entry: module → subject picker → mode picker (Viva Bot vs Browse Q&A). Build Viva Bot session (examiner mode picker: Strict / Friendly / Standard → greeting → voice Q&A loop). Pro paywall gate. |
 | 22 | Build Browse Q&A (expandable question list with answer + key points + save button). Shares the same module → subject picker as Viva. Wire to same viva sheet data. |
 | 23 | Wire live badges (saved count on Saved Questions card). Integration test: full Education tab flow on mobile (375 px) and desktop. Dark-mode check. |
@@ -450,7 +540,7 @@ Phase 2 additions (Saved Questions, Quick Summaries, Flashcards) each add one ca
 
 ---
 
-## 8. Sources consulted
+## 9. Sources consulted
 
 - `docs/decisions/rag-architecture.md` — past-paper ingestion, high-yield scoring
 - `docs/decisions/model-selection.md` — MCQ explanation generation (Flash-Lite batch)
