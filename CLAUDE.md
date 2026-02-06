@@ -36,7 +36,18 @@ Revenue sources (Year 1 target PKR 2.25 M):
 6. **Karachi context.** Timezone: Asia/Karachi (UTC+5). Date format: DD/MM/YYYY in UI unless ISO is required by an API.
 7. **Mobile-first.** Every component must be usable on a 375 px viewport. Touch targets ≥ 44 × 44 px.
 8. **WCAG AA.** Contrast ratios and accessibility must meet AA at minimum.
-9. **Commit often, branch often.** Never push directly to `main`. Feature branches only.
+9. **Git branching discipline.**
+   - **Docs-only changes** (session logs, todo, CLAUDE.md, decision docs, PRD): commit and push directly to `main`. These don't break builds and branching for docs is unnecessary overhead.
+   - **Code changes** (anything in `src/`, migrations, config, `package.json`, tests): ALWAYS use a feature branch → PR → merge workflow:
+     1. `git checkout -b feature/<short-name>` off `main`
+     2. Build, commit with descriptive messages
+     3. `git push -u origin feature/<short-name>`
+     4. `gh pr create` with summary + test plan
+     5. Self-review the diff on GitHub (catches mistakes before merge)
+     6. `git checkout main && git merge feature/<short-name> && git push`
+     7. `git branch -d feature/<short-name>`
+   - Never force-push to `main`. Never skip the PR step for code changes.
+   - Mixed changes (docs + code in same session): branch for the code, commit docs to `main` separately.
 10. **Ask before creating files.** Especially documentation — confirm content before writing.
 11. **Always update the session doc.** At the end of every session (or when switching context), update `docs/sessions/` with what was done, what state the project is in, and what comes next. This is mandatory — never skip it.
 12. **Never read `docs/02_DATABASE_SCHEMA.md` in full at session start.** It is 925 lines. Query the live schema via the Supabase MCP server, or read only the specific table block you need. Same rule for any doc over 200 lines — read surgically, not wholesale.
