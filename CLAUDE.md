@@ -1,6 +1,6 @@
 # CLAUDE.md – DowOS Project Guide
 
-Last updated: 2026-02-06 (Session 9 — migrations applied, Day 11 ready, todo sync rule added)
+Last updated: 2026-02-06 (Session 10 — PRD updated, todo comprehensive, skills expanded)
 
 ---
 
@@ -11,18 +11,18 @@ Target users: ~2 000 medical students (Batches 1–5).
 The app is built by a three-person team (Salik – dev, Ammaar – ops, Azfar – content).
 
 Core product tiers:
-- **Free** – Auth, Timetable, Attendance, AI Tutor (5 soft / 6 hard msgs/day), MCQ Solver (unlimited + "Ask AI →" on every explanation), Progress Matrix (full heatmap, weak topics, readiness scores), Saved Questions (20 max), Viva Bot (1 free session taste), Browse Q&A, Lost & Found, Announcements, Prayer Times, Maps.
+- **Free** – Auth, Timetable, Attendance, AI Tutor (5 soft / 6 hard msgs/day), MCQ Solver (unlimited + "Ask AI →" on every explanation), Study Tracker (full heatmap + manual checklist, weak topics, readiness scores), Flashcards (unlimited reviews, max 3 custom decks), Exam Prediction Engine (high-yield topics), Study Guides & Resource Hub, Saved Questions (20 max), Viva Bot (1 free session taste), Browse Q&A, Lost & Found, Announcements, Prayer Times, Maps.
 - **Pro** – PKR 3 000 / year (or PKR 1 500 exam-season pass, 3 months). Unlocks: unlimited AI Tutor, conversation history, voice mode, Viva Bot (180 min/mo), AI Study Plan, unlimited saved questions, offline content download.
 
 Revenue sources (Year 1 target PKR 2.25 M):
 | Source | Model |
 |---|---|
-| Pro subscriptions | Direct (25 % conversion target) |
+| Pro subscriptions | Direct Easypaisa/JazzCash (15-20 % conversion target) |
 | DowEats | 15 % commission on food orders |
 | Dow Merch | Direct profit on hoodies / lab coats |
 | Marketplace | 10 % commission on textbook trades |
 
-All in-app payments use **Dow Credits** (manual top-up, verified in 5–10 min).
+**Dow Credits** (manual Easypaisa/JazzCash top-up, verified in 5–10 min) are used for DowEats, Merch, and Marketplace only. **Pro subscription** uses a separate direct payment flow (NOT through Dow Credits).
 
 ---
 
@@ -168,16 +168,41 @@ docs/                     # All project docs (PRD, schema, design, sessions, roa
 Skills live at `C:/Users/salik/.claude/skills/`. Invoke via the Skill tool by name.
 
 **Key skills for this project and when to use them:**
+
+Always tell the user which skill(s) you are invoking at the start of a task.
+
 | Skill | Use when |
 |---|---|
-| `nextjs-app-router-patterns` | Building any Next.js page, layout, or data-fetching pattern |
-| `nextjs-supabase-auth` | Anything touching auth: middleware, session, login, signup |
-| `ai-engineer` | RAG pipeline, Gemini integration, embedding, vector search |
-| `rag-engineer` | Chunking, retrieval, re-ranking, pgvector queries |
-| `context-compression` | Session is getting long — before you compact, read this |
-| `strategic-compact` | Tells you *when* to `/compact`. Read before any long build session. |
-| `tailwind-design-system` | New UI components — check tokens and patterns first |
-| `react-patterns` | Component architecture, hooks, state decisions |
-| `security-review` | Before any auth, payment, or admin route ships |
+| **Core Development** | |
+| `nextjs-app-router-patterns` | Building any Next.js page, layout, route group, data fetching, ISR, SSR |
+| `nextjs-supabase-auth` | Auth middleware, session handling, login/signup, RLS, JWT role checks |
+| `nextjs-best-practices` | Performance patterns, caching, rendering strategies, API routes |
+| `react-patterns` | Component architecture, hooks, state management decisions |
+| `react-best-practices` | Performance, memoization, error boundaries, suspense patterns |
+| `typescript-expert` | Strict mode typing, generics, Supabase type generation, utility types |
+| **Styling & Design** | |
+| `tailwind-design-system` | New UI components — check design tokens, spacing, colour usage first |
+| `tailwind-patterns` | Responsive layouts, dark mode, animation, utility patterns |
+| `web-design-guidelines` | Layout principles, visual hierarchy, whitespace, consistency |
+| `ui-ux-designer` | UX flow decisions, interaction patterns, user journey mapping |
+| `mobile-design` | Mobile-first patterns, touch targets, safe areas, gestures |
+| `accessibility-compliance-accessibility-audit` | WCAG AA audit, contrast checks, screen reader testing |
+| **AI & Data** | |
+| `ai-engineer` | Gemini integration, RAG pipeline, embedding, prompt engineering |
+| `rag-engineer` | Chunking strategy, retrieval, re-ranking, pgvector queries |
+| **Database & Backend** | |
+| `database-design` | Schema decisions, table relationships, indexes, normalization |
+| `postgres-best-practices` | Query optimization, RLS policies, migrations, indexes |
+| `api-design-principles` | Next.js API routes structure, REST patterns, error handling |
+| **Quality & Security** | |
+| `security-review` | Before shipping auth, payment, admin routes, or credits flow |
+| `clean-code` | Readability, naming, single responsibility, DRY |
+| `code-review-excellence` | Self-review before committing, catching edge cases |
+| **Session & Context** | |
+| `strategic-compact` | Knowing *when* to `/compact` during long build sessions |
+| `context-compression` | Before compacting — preserving the right context |
+| **Shipping & Ops** | |
+| `vercel-deployment` | Deploying, preview environments, env vars, edge functions |
+| `firebase` | FCM push notification setup, token management |
 
 **Supabase MCP** is wired in `.claude/settings.json`. Use it to query live schema instead of reading `docs/02_DATABASE_SCHEMA.md`.
